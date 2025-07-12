@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import GetProfileFeature from './getUser';
 
 export default function NavBar() {
   const [username, setUsername] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const storedUsername = localStorage.getItem('username');
-    setUsername(storedUsername);
+    setUsername(localStorage.getItem('username') ?? null);
   }, []);
 
   const handleLogout = () => {
@@ -20,7 +20,7 @@ export default function NavBar() {
       <div className="text-xl font-bold tracking-wide"> MERCHANT</div>
 
       <div className="flex items-center gap-4">
-        {username && <span className="font-medium">{username}</span>}
+        <GetProfileFeature username={username} />
 
         <button
           onClick={handleLogout}

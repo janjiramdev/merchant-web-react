@@ -5,6 +5,7 @@ import TextField from '../components/inputs/TextField';
 import SelectField from '../components/inputs/SelectField';
 import FailedAlert from '../components/alerts/FailedAlert';
 import ConfirmButton from '../components/buttons/ConfirmButton';
+import { createUser } from '../services/userService';
 
 type FormData = {
   username: string;
@@ -49,9 +50,15 @@ export default function Register() {
     setErrorMessage('');
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await createUser({
+        username: formData.username,
+        password: formData.password,
+        firstName: formData.firstname,
+        lastName: formData.lastname,
+        gender: formData.gender,
+        age: formData.age ?? 0,
+      });
       setShowSuccess(true);
-
       await new Promise((resolve) => setTimeout(resolve, 2000));
       navigate('/login');
     } catch {

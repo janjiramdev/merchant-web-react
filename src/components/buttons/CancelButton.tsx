@@ -18,7 +18,7 @@ export default function CancelButton({
   return (
     <button
       type={type}
-      className={`w-full rounded-lg py-2 text-white transition bg-gray-500 hover:bg-gray-700 disabled:opacity-60 ${className}`}
+      className={`w-full rounded-lg px-5 py-2 text-white transition bg-gray-500 hover:bg-gray-700 disabled:opacity-60 ${className}`}
       disabled={disabled}
       onClick={onClick}
     >

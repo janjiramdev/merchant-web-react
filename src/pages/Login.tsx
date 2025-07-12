@@ -25,11 +25,30 @@ export default function Login() {
     setIsLoading(true);
     setMessage('');
 
+    function parseJwt(token: string) {
+      try {
+        return JSON.parse(atob(token.split('.')[1]));
+      } catch (e) {
+        console.error('Invalid token', e);
+        return null;
+      }
+    }
+
     try {
       const data = await login(formData);
 
-      localStorage.setItem('accessToken', data.accessToken);
-      localStorage.setItem('refreshToken', data.refreshToken);
+      const { accessToken, refreshToken } = data.data;
+
+      const payload = parseJwt(accessToken);
+      const objectId = payload?.sub;
+
+      if (!objectId) {
+        throw new Error('No user ID found in token');
+      }
+
+      localStorage.setItem('objectId', objectId);
+      localStorage.setItem('accessToken', accessToken);
+      localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('username', formData.username);
 
       setMessage('login success');
