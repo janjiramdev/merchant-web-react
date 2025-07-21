@@ -2,7 +2,7 @@ import CancelButton from '../buttons/CancelButton';
 import ConfirmButton from '../buttons/ConfirmButton';
 import SelectField from '../inputs/SelectField';
 import TextField from '../inputs/TextField';
-import Modal from '../Modal';
+import Modal from './Modal';
 
 type EditProfileModalProps = {
   isOpen: boolean;
@@ -46,16 +46,19 @@ export default function EditProfileModal({
           onChange={(e) => onChangePassword(e.target.value)}
           type="password"
         />
+
         <label className="text-sm">Firstname</label>
         <TextField
           value={firstName}
           onChange={(e) => onChangeFirstName(e.target.value)}
         />
+
         <label className="text-sm">Lastname</label>
         <TextField
           value={lastName}
           onChange={(e) => onChangeLastName(e.target.value)}
         />
+
         <label className="text-sm">Gender</label>
         <SelectField
           value={gender}
@@ -66,6 +69,7 @@ export default function EditProfileModal({
           <option value="female">Female</option>
           <option value="other">Other</option>
         </SelectField>
+
         <label className="text-sm">Age</label>
         <TextField
           value={age}

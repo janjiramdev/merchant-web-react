@@ -1,38 +1,46 @@
-import { useState } from 'react';
-import Table from '../components/Table';
-import Modal from '../components/Modal';
-import TextField from '../components/inputs/TextField';
+import { useEffect, useState } from 'react';
+import FailedAlert from '../components/alerts/FailedAlert';
 import CancelButton from '../components/buttons/CancelButton';
 import ConfirmButton from '../components/buttons/ConfirmButton';
-import DeleteButton from '../components/buttons/DeleteButton';
-import EditButton from '../components/buttons/EditButton';
+import TextField from '../components/inputs/TextField';
+import Modal from '../components/modals/Modal';
+import Table from '../components/Table';
+import {
+  adjustStock,
+  getStockAdjustHistories,
+} from '../services/stockAdjustmentService';
 
 const columns = [
   { key: 'productId', label: 'Product ID' },
   { key: 'adjustType', label: 'Adjust Type' },
   { key: 'quantity', label: 'Quantity' },
-  { key: 'actions', label: 'ACTIONS' },
 ] as const;
 
 type StockAdjustmentType = {
-  id: string;
+  _id: string;
   productId: string;
-  adjustType: number;
+  adjustType: 'add' | 'remove';
   quantity: number;
 };
+
 type StockAdjustmentProps = {
   isAddModalOpen: boolean;
   closeAddModal: () => void;
 };
 
+type ApiStockType = {
+  _id: string;
+  product: string;
+  adjustType: 'add' | 'remove';
+  quantity: number;
+  createdAt: string;
+  createdBy: string;
+  __v: number;
+};
+
 const initialNewStockAdjustment = {
   productId: '',
-  adjustType: '',
-  quantity: '',
-};
-const initialEditStockAdjustment = {
-  productId: '',
-  adjustType: 0,
+  adjustType: 'add' as 'add' | 'remove' | '',
   quantity: 0,
 };
 
@@ -41,82 +49,96 @@ export default function StockAdjustment({
   closeAddModal,
 }: StockAdjustmentProps) {
   const [stockAdjustment, setStockAdjustment] = useState<StockAdjustmentType[]>(
-    [
-      { id: '1', productId: '1', adjustType: 1, quantity: 2 },
-      { id: '2', productId: '2', adjustType: 3, quantity: 5 },
-    ],
+    [],
   );
-
   const [newStock, setNewStock] = useState(initialNewStockAdjustment);
-  const [editIndex, setEditIndex] = useState<number | null>(null);
-  const [editStock, setEditStock] = useState(initialEditStockAdjustment);
-  const [deleteIndex, setDeleteIndex] = useState<number | null>(null);
-  const [showConfirm, setShowConfirm] = useState(false);
   const [isConfirmAddOpen, setConfirmAddOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setNewStock((prev) => ({ ...prev, [name]: value }));
+  const fetchStocks = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) throw new Error('token not found');
+
+      const stocks: ApiStockType[] = await getStockAdjustHistories(
+        undefined,
+        token,
+      );
+      const mappedStocks = stocks.map((item) => ({
+        ...item,
+        productId: item.product,
+      }));
+
+      setStockAdjustment(mappedStocks);
+    } catch {
+      setErrorMessage('failed to fetch products');
+    }
   };
 
-  const handleAddStock = () => {
+  useEffect(() => {
+    if (!isAddModalOpen) {
+      setErrorMessage('');
+      setNewStock(initialNewStockAdjustment);
+      fetchStocks();
+    }
+  }, [isAddModalOpen]);
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
+    const { name, value } = e.target;
+    setNewStock((prev) => ({
+      ...prev,
+      [name]: name === 'adjustType' ? value.toLowerCase() : value,
+    }));
+  };
+
+  const handleAddStock = async () => {
     const productId = newStock.productId.trim();
-    const adjustType = Number(newStock.adjustType);
+    const adjustType = newStock.adjustType.toLowerCase();
     const quantity = Number(newStock.quantity);
 
-    if (!productId || isNaN(adjustType) || isNaN(quantity)) return;
+    if (
+      !productId ||
+      (adjustType !== 'add' && adjustType !== 'remove') ||
+      isNaN(quantity)
+    ) {
+      setErrorMessage('invalid input');
+      return;
+    }
+    if (quantity <= 0) {
+      setErrorMessage('quantity must be greater than 0');
+      return;
+    }
 
-    const newEntry = {
-      id: (stockAdjustment.length + 1).toString(),
-      productId,
-      adjustType,
-      quantity,
-    };
-    setStockAdjustment([...stockAdjustment, newEntry]);
-    setNewStock({ productId: '', adjustType: '', quantity: '' });
-    closeAddModal();
+    const token = localStorage.getItem('accessToken');
+    if (!token) throw new Error('token not found');
+
+    try {
+      await adjustStock({ productId, adjustType, quantity }, token);
+      await fetchStocks();
+      setNewStock(initialNewStockAdjustment);
+      closeAddModal();
+    } catch (err) {
+      console.error(err);
+      let message = 'failed to create adjust stock';
+      if (err instanceof Error) message = err.message;
+      else if (typeof err === 'string') message = err;
+      setErrorMessage(message);
+    }
   };
 
   const handleAddClick = () => {
     setConfirmAddOpen(true);
   };
 
-  const handleConfirmAdd = () => {
+  const handleConfirmAdd = async () => {
     setConfirmAddOpen(false);
-    handleAddStock();
+    await handleAddStock();
   };
 
   const handleCancelConfirm = () => {
     setConfirmAddOpen(false);
-  };
-
-  const handleEdit = (index: number) => {
-    const sale = stockAdjustment[index];
-    setEditStock({
-      productId: sale.productId,
-      adjustType: sale.adjustType,
-      quantity: sale.quantity,
-    });
-    setEditIndex(index);
-  };
-
-  const handleDelete = (index: number) => {
-    const updated = [...stockAdjustment];
-    updated.splice(index, 1);
-    setStockAdjustment(updated);
-  };
-
-  const handleUpdate = () => {
-    if (editIndex === null) return;
-    const updated = [...stockAdjustment];
-    updated[editIndex] = {
-      ...updated[editIndex],
-      productId: editStock.productId,
-      adjustType: editStock.adjustType,
-      quantity: editStock.quantity,
-    };
-    setStockAdjustment(updated);
-    setEditIndex(null);
   };
 
   return (
@@ -132,23 +154,29 @@ export default function StockAdjustment({
               value={newStock.productId}
               onChange={handleChange}
             />
+
             <label className="text-sm">Adjust Type</label>
-            <TextField
+            <select
               name="adjustType"
-              type="number"
-              placeholder="Adjust Type"
               value={newStock.adjustType}
               onChange={handleChange}
-            />
+              className="border rounded p-1"
+            >
+              <option value="">Select Adjust Type</option>
+              <option value="add">ADD</option>
+              <option value="remove">REMOVE</option>
+            </select>
+
             <label className="text-sm">Quantity</label>
             <TextField
               name="quantity"
               type="number"
               placeholder="Quantity"
-              value={newStock.quantity}
+              value={newStock.quantity.toString()}
               onChange={handleChange}
             />
           </div>
+
           <div className="flex justify-end gap-2">
             <CancelButton onClick={closeAddModal}>Cancel</CancelButton>
             <ConfirmButton onClick={handleAddClick}>Add</ConfirmButton>
@@ -159,13 +187,8 @@ export default function StockAdjustment({
       <Table
         columns={columns}
         rows={stockAdjustment}
-        rowKey="id"
-        renderActions={(_, index) => (
-          <div className="flex justify-center gap-2">
-            <DeleteButton onClick={() => setDeleteIndex(index)} />
-            <EditButton onClick={() => handleEdit(index)} />
-          </div>
-        )}
+        rowKey="_id"
+        renderActions={() => null}
       />
 
       {isConfirmAddOpen && (
@@ -178,87 +201,11 @@ export default function StockAdjustment({
         </Modal>
       )}
 
-      {editIndex !== null && (
-        <Modal title="Edit Stock" onClose={() => setEditIndex(null)}>
-          <div className="grid gap-2 mb-4">
-            <label className="text-sm">Adjust Type</label>
-            <TextField
-              name="adjustType"
-              type="number"
-              placeholder="Adjust Type"
-              value={editStock.adjustType.toString()}
-              onChange={(e) =>
-                setEditStock((prev) => ({
-                  ...prev,
-                  adjustType: Number(e.target.value),
-                }))
-              }
-            />
-            <label className="text-sm">Quantity</label>
-            <TextField
-              name="quantity"
-              type="number"
-              placeholder="Quantity"
-              value={editStock.quantity.toString()}
-              onChange={(e) =>
-                setEditStock((prev) => ({
-                  ...prev,
-                  quantity: Number(e.target.value),
-                }))
-              }
-            />
-          </div>
-          <div className="flex justify-end gap-2">
-            <CancelButton onClick={() => setEditIndex(null)}>
-              Cancel
-            </CancelButton>
-            <ConfirmButton onClick={() => setShowConfirm(true)}>
-              Save
-            </ConfirmButton>
-          </div>
-        </Modal>
-      )}
-
-      {showConfirm && (
-        <Modal title="Confirm Save" onClose={() => setShowConfirm(false)}>
-          <p>Are you sure you want to save the changes?</p>
-          <div className="flex justify-end gap-2 mt-4">
-            <CancelButton onClick={() => setShowConfirm(false)}>
-              Cancel
-            </CancelButton>
-            <ConfirmButton
-              onClick={() => {
-                handleUpdate();
-                setShowConfirm(false);
-                setEditIndex(null);
-              }}
-            >
-              Confirm
-            </ConfirmButton>
-          </div>
-        </Modal>
-      )}
-
-      {deleteIndex !== null && (
-        <Modal title="Delete Stock" onClose={() => setDeleteIndex(null)}>
-          <p className="mb-4">
-            Do you want to delete this stock record for product id{' '}
-            <strong>{stockAdjustment[deleteIndex].productId}</strong>?
-          </p>
-          <div className="flex justify-end gap-2">
-            <CancelButton onClick={() => setDeleteIndex(null)}>
-              Cancel
-            </CancelButton>
-            <ConfirmButton
-              onClick={() => {
-                handleDelete(deleteIndex);
-                setDeleteIndex(null);
-              }}
-            >
-              Confirm
-            </ConfirmButton>
-          </div>
-        </Modal>
+      {errorMessage && (
+        <FailedAlert
+          message={errorMessage}
+          onClose={() => setErrorMessage('')}
+        />
       )}
     </div>
   );

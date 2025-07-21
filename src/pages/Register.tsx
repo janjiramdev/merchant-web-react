@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import SuccessAlert from '../components/alerts/SucceedAlert';
-import TextField from '../components/inputs/TextField';
-import SelectField from '../components/inputs/SelectField';
 import FailedAlert from '../components/alerts/FailedAlert';
+import SuccessAlert from '../components/alerts/SucceedAlert';
 import ConfirmButton from '../components/buttons/ConfirmButton';
+import PasswordToggleButton from '../components/buttons/PasswordToggleButton';
+import SelectField from '../components/inputs/SelectField';
+import TextField from '../components/inputs/TextField';
 import { createUser } from '../services/userService';
 
 type FormData = {
@@ -29,6 +30,7 @@ export default function Register() {
   const [showFailed, setShowFailed] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const navigate = useNavigate();
 
@@ -59,10 +61,11 @@ export default function Register() {
         age: formData.age ?? 0,
       });
       setShowSuccess(true);
+
       await new Promise((resolve) => setTimeout(resolve, 2000));
       navigate('/login');
     } catch {
-      setErrorMessage('Something went wrong. Please try again');
+      setErrorMessage('something went wrong. please try again');
       setShowFailed(true);
     } finally {
       setIsLoading(false);
@@ -77,9 +80,13 @@ export default function Register() {
             <SuccessAlert message="Account created successfully!" />
           </div>
         )}
+
         {showFailed && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/30">
-            <FailedAlert message={errorMessage} />
+            <FailedAlert
+              message={errorMessage}
+              onClose={() => setErrorMessage('')}
+            />
           </div>
         )}
 
@@ -92,7 +99,6 @@ export default function Register() {
             <label className="block mb-1 text-sm font-medium text-gray-700">
               Username
             </label>
-
             <TextField
               name="username"
               type="text"
@@ -105,20 +111,26 @@ export default function Register() {
             <label className="block mb-1 text-sm font-medium text-gray-700">
               Password
             </label>
-
-            <TextField
-              name="password"
-              type="password"
-              value={formData.password}
-              onChange={handleChange}
-            />
+            <div className="relative">
+              <TextField
+                type={showPassword ? 'text' : 'password'}
+                value={formData.password}
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
+                }
+                className="w-full rounded-lg border border-gray-300 p-2 focus:border-blue-500 focus:outline-none"
+              />
+              <PasswordToggleButton
+                show={showPassword}
+                toggle={() => setShowPassword(!showPassword)}
+              />
+            </div>
           </div>
 
           <div>
             <label className="block mb-1 text-sm font-medium text-gray-700">
               Firstname
             </label>
-
             <TextField
               name="firstname"
               type="text"
@@ -132,7 +144,6 @@ export default function Register() {
             <label className="block mb-1 text-sm font-medium text-gray-700">
               Lastname
             </label>
-
             <TextField
               name="lastname"
               type="text"
@@ -145,7 +156,6 @@ export default function Register() {
             <label className="block mb-1 text-sm font-medium text-gray-700">
               Gender
             </label>
-
             <SelectField
               name="gender"
               value={formData.gender}

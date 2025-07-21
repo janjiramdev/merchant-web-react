@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { login } from '../services/authService';
-import TextField from '../components/inputs/TextField';
 import ConfirmButton from '../components/buttons/ConfirmButton';
+import PasswordToggleButton from '../components/buttons/PasswordToggleButton';
+import TextField from '../components/inputs/TextField';
+import { login } from '../services/authService';
 
 type FormData = {
   username: string;
@@ -17,6 +18,7 @@ export default function Login() {
 
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const navigate = useNavigate();
 
@@ -29,22 +31,18 @@ export default function Login() {
       try {
         return JSON.parse(atob(token.split('.')[1]));
       } catch (e) {
-        console.error('Invalid token', e);
+        console.error('invalid token', e);
         return null;
       }
     }
 
     try {
       const data = await login(formData);
-
       const { accessToken, refreshToken } = data.data;
 
       const payload = parseJwt(accessToken);
       const objectId = payload?.sub;
-
-      if (!objectId) {
-        throw new Error('No user ID found in token');
-      }
+      if (!objectId) throw new Error('user id not found in token');
 
       localStorage.setItem('objectId', objectId);
       localStorage.setItem('accessToken', accessToken);
@@ -86,14 +84,21 @@ export default function Login() {
             <label className="mb-1 block text-sm font-medium text-gray-700">
               password
             </label>
-            <TextField
-              type="password"
-              value={formData.password}
-              onChange={(e) =>
-                setFormData({ ...formData, password: e.target.value })
-              }
-              className="w-full rounded-lg border border-gray-300 p-2 focus:border-blue-500 focus:outline-none"
-            />
+            <div className="relative">
+              <TextField
+                type={showPassword ? 'text' : 'password'}
+                value={formData.password}
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
+                }
+                className="w-full rounded-lg border border-gray-300 p-2 focus:border-blue-500 focus:outline-none"
+              />
+
+              <PasswordToggleButton
+                show={showPassword}
+                toggle={() => setShowPassword(!showPassword)}
+              />
+            </div>
           </div>
 
           {message && (

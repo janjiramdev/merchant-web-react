@@ -21,7 +21,6 @@ export async function createUser(formData: {
     const error = await response.json();
     throw new Error(error.message || 'Registration failed');
   }
-
   return response.json();
 }
 
@@ -47,7 +46,7 @@ export async function updateUser(
       body: JSON.stringify(updateData),
     },
   );
-  console.log(response);
+
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.message || 'Failed to update profile');
@@ -57,6 +56,7 @@ export async function updateUser(
 
 export async function getUser(token: string, username: string) {
   const url = new URL(`${import.meta.env.VITE_SERVICE_ENDPOINT}/users`);
+
   url.searchParams.append('username', username);
   url.searchParams.append('sortBy', 'createdAt');
   url.searchParams.append('sortDirection', 'asc');
@@ -69,11 +69,6 @@ export async function getUser(token: string, username: string) {
     },
   });
 
-  console.log('response:', response);
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch user');
-  }
-
+  if (!response.ok) throw new Error('Failed to fetch user');
   return response.json();
 }

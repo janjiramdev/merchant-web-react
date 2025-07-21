@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import GetProfileFeature from './getUser';
+import GetProfileFeature from './GetUser';
 
 export default function NavBar() {
   const [username, setUsername] = useState<string | null>(null);

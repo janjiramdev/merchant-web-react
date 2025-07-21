@@ -1,15 +1,23 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Table from '../components/Table';
-import TextField from '../components/inputs/TextField';
-import ConfirmButton from '../components/buttons/ConfirmButton';
-import Modal from '../components/Modal';
+import FailedAlert from '../components/alerts/FailedAlert';
 import CancelButton from '../components/buttons/CancelButton';
+import ConfirmButton from '../components/buttons/ConfirmButton';
 import DeleteButton from '../components/buttons/DeleteButton';
 import EditButton from '../components/buttons/EditButton';
+import TextField from '../components/inputs/TextField';
+import Modal from '../components/modals/Modal';
+import {
+  createProduct,
+  deleteProduct,
+  searchProducts,
+  updateProduct,
+} from '../services/productsService';
 
 const columns = [
-  { key: 'id', label: 'ID' },
+  { key: 'id', label: 'Product ID' },
   { key: 'name', label: 'Name' },
+  { key: 'description', label: 'Description' },
   { key: 'currentStock', label: 'Stock' },
   { key: 'price', label: 'Price' },
   { key: 'totalSales', label: 'Total Sales' },
@@ -19,6 +27,7 @@ const columns = [
 type ProductType = {
   id: string;
   name: string;
+  description?: string;
   currentStock: number;
   price: number;
   totalSales: number;
@@ -29,57 +38,89 @@ type ProductProps = {
   closeAddModal: () => void;
 };
 
-const initialNewProduct = { name: '', stock: '', price: '' };
-const initialEditProduct = { name: '', currentStock: 0, price: 0 };
+const initialNewProduct = { name: '', description: '', price: 0 };
+const initialEditProduct = { name: '', description: '', price: 0 };
 
 export default function Product({
   isAddModalOpen,
   closeAddModal,
 }: ProductProps) {
-  const [products, setProducts] = useState<ProductType[]>([
-    { id: '1', name: 'Apple', currentStock: 4, price: 5, totalSales: 1 },
-    { id: '2', name: 'Carrot', currentStock: 4, price: 5, totalSales: 2 },
-    { id: '3', name: 'Banana', currentStock: 4, price: 5, totalSales: 3 },
-  ]);
-
+  const [products, setProducts] = useState<ProductType[]>([]);
   const [newProduct, setNewProduct] = useState(initialNewProduct);
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [editProduct, setEditProduct] = useState(initialEditProduct);
-  const [deleteIndex, setDeleteIndex] = useState<number | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [isConfirmAddOpen, setConfirmAddOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const token = localStorage.getItem('accessToken');
+        if (!token) throw new Error('token not found');
+
+        const products = await searchProducts(undefined, token);
+        setProducts(products);
+      } catch {
+        setErrorMessage('failed to fetch products');
+      }
+    };
+
+    if (!isAddModalOpen) {
+      setErrorMessage('');
+      setNewProduct(initialNewProduct);
+      fetchProducts();
+    }
+  }, [isAddModalOpen]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setNewProduct((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleAddProduct = () => {
+  const handleAddProduct = async () => {
     const name = newProduct.name.trim();
+    const description = newProduct.description?.trim() ?? '';
     const price = Number(newProduct.price);
-    const stock = Number(newProduct.stock);
 
-    if (!name || isNaN(price) || isNaN(stock)) return;
+    if (!name || isNaN(price) || price <= 0) {
+      setErrorMessage('please enter a valid name and price greater than 0.');
+      return;
+    }
 
-    const newEntry = {
-      id: (products.length + 1).toString(),
-      name,
-      price,
-      currentStock: stock,
-      totalSales: 0,
-    };
-    setProducts([...products, newEntry]);
-    setNewProduct({ name: '', price: '', stock: '' });
-    closeAddModal();
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) throw new Error('token not found');
+
+      const payload: {
+        name: string;
+        price: number;
+        description?: string;
+      } = { name, price };
+
+      if (description && description !== '') payload.description = description;
+      const createdProduct = await createProduct(payload, token);
+
+      setProducts([...products, createdProduct]);
+      setNewProduct({ name: '', description: '', price: 0 });
+      closeAddModal();
+    } catch (err) {
+      console.error(err);
+      let message = 'failed to create product';
+      if (err instanceof Error) message = err.message;
+      else if (typeof err === 'string') message = err;
+      setErrorMessage(message);
+    }
   };
 
   const handleAddClick = () => {
     setConfirmAddOpen(true);
   };
 
-  const handleConfirmAdd = () => {
+  const handleConfirmAdd = async () => {
     setConfirmAddOpen(false);
-    handleAddProduct();
+    await handleAddProduct();
   };
 
   const handleCancelConfirm = () => {
@@ -90,29 +131,80 @@ export default function Product({
     const product = products[index];
     setEditProduct({
       name: product.name,
-      currentStock: product.currentStock,
+      description: product.description ?? '',
       price: product.price,
     });
     setEditIndex(index);
   };
 
-  const handleDelete = (index: number) => {
-    const updated = [...products];
-    updated.splice(index, 1);
-    setProducts(updated);
+  const handleUpdate = async () => {
+    if (editIndex === null) return;
+
+    const product = products[editIndex];
+    const id = product.id;
+
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      setErrorMessage('token not found');
+      return;
+    }
+
+    const name = editProduct.name.trim();
+    const price = Number(editProduct.price);
+    const description = editProduct.description?.trim();
+
+    const payload: {
+      name?: string;
+      price?: number;
+      description?: string;
+    } = {};
+
+    if (name) payload.name = name;
+    if (!isNaN(price) && price > 0) payload.price = price;
+    if (description) payload.description = description;
+    if (Object.keys(payload).length === 0) {
+      setErrorMessage('please enter at least one valid field to update.');
+      return;
+    }
+
+    try {
+      await updateProduct(id, payload, token);
+
+      const updated = [...products];
+      updated[editIndex] = {
+        ...updated[editIndex],
+        ...payload,
+      };
+
+      setProducts(updated);
+      setEditIndex(null);
+      setShowConfirm(false);
+    } catch (err) {
+      console.error(err);
+      let message = 'failed to update product';
+      if (err instanceof Error) message = err.message;
+      else if (typeof err === 'string') message = err;
+      setErrorMessage(message);
+    }
   };
 
-  const handleUpdate = () => {
-    if (editIndex === null) return;
-    const updated = [...products];
-    updated[editIndex] = {
-      ...updated[editIndex],
-      name: editProduct.name,
-      currentStock: editProduct.currentStock,
-      price: editProduct.price,
-    };
-    setProducts(updated);
-    setEditIndex(null);
+  const handleDelete = async (id: string) => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      setErrorMessage('token not found');
+      return;
+    }
+
+    try {
+      await deleteProduct(id, token);
+      setProducts(products.filter((p) => p.id !== id));
+    } catch (err) {
+      console.error(err);
+      let message = 'failed to delete product';
+      if (err instanceof Error) message = err.message;
+      else if (typeof err === 'string') message = err;
+      setErrorMessage(message);
+    }
   };
 
   return (
@@ -120,6 +212,13 @@ export default function Product({
       {isAddModalOpen && (
         <Modal title="Add New Product" onClose={closeAddModal}>
           <div className="grid gap-2 mb-4">
+            {errorMessage && (
+              <FailedAlert
+                message={errorMessage}
+                onClose={() => setErrorMessage('')}
+              />
+            )}
+
             <label className="text-sm">Name</label>
             <TextField
               name="name"
@@ -128,14 +227,16 @@ export default function Product({
               value={newProduct.name}
               onChange={handleChange}
             />
-            <label className="text-sm">Stock</label>
+
+            <label className="text-sm">Description</label>
             <TextField
-              name="stock"
-              type="number"
-              placeholder="Stock"
-              value={newProduct.stock}
+              name="description"
+              type="text"
+              placeholder="Description"
+              value={newProduct.description}
               onChange={handleChange}
             />
+
             <label className="text-sm">Price</label>
             <TextField
               name="price"
@@ -145,6 +246,7 @@ export default function Product({
               onChange={handleChange}
             />
           </div>
+
           <div className="flex justify-end gap-2">
             <CancelButton onClick={closeAddModal}>Cancel</CancelButton>
             <ConfirmButton onClick={handleAddClick}>Add</ConfirmButton>
@@ -156,10 +258,14 @@ export default function Product({
         columns={columns}
         rows={products}
         rowKey="id"
-        renderActions={(_, index) => (
+        renderActions={(row) => (
           <div className="flex justify-center gap-2">
-            <DeleteButton onClick={() => setDeleteIndex(index)} />
-            <EditButton onClick={() => handleEdit(index)} />
+            <DeleteButton onClick={() => setDeleteId(row.id)} />
+            <EditButton
+              onClick={() =>
+                handleEdit(products.findIndex((p) => p.id === row.id))
+              }
+            />
           </div>
         )}
       />
@@ -173,9 +279,17 @@ export default function Product({
           </div>
         </Modal>
       )}
+
       {editIndex !== null && (
         <Modal title="Edit Product" onClose={() => setEditIndex(null)}>
           <div className="grid gap-2 mb-4">
+            {errorMessage && (
+              <FailedAlert
+                message={errorMessage}
+                onClose={() => setErrorMessage('')}
+              />
+            )}
+
             <label className="text-sm">Name</label>
             <TextField
               name="name"
@@ -186,26 +300,27 @@ export default function Product({
                 setEditProduct((prev) => ({ ...prev, name: e.target.value }))
               }
             />
-            <label className="text-sm">Stock</label>
+
+            <label className="text-sm">Description</label>
             <TextField
-              name="stock"
-              type="number"
-              placeholder="Stock"
-              value={editProduct.currentStock.toString()}
+              name="description"
+              type="text"
+              placeholder="Description"
+              value={editProduct.description ?? ''}
               onChange={(e) =>
                 setEditProduct((prev) => ({
                   ...prev,
-                  currentStock: Number(e.target.value),
+                  description: String(e.target.value),
                 }))
               }
             />
-            <label className="text-sm">Price</label>
 
+            <label className="text-sm">Price</label>
             <TextField
               name="price"
               type="number"
               placeholder="Price"
-              value={editProduct.price.toString()}
+              value={editProduct.price?.toString() ?? ''}
               onChange={(e) =>
                 setEditProduct((prev) => ({
                   ...prev,
@@ -214,11 +329,32 @@ export default function Product({
               }
             />
           </div>
+
           <div className="flex justify-end gap-2">
-            <CancelButton onClick={() => setEditIndex(null)}>
+            <CancelButton
+              onClick={() => {
+                setEditIndex(null);
+                setErrorMessage('');
+              }}
+            >
               Cancel
             </CancelButton>
-            <ConfirmButton onClick={() => setShowConfirm(true)}>
+
+            <ConfirmButton
+              onClick={() => {
+                if (
+                  !editProduct.name ||
+                  editProduct.price == null ||
+                  editProduct.price <= 0
+                ) {
+                  setErrorMessage(
+                    'Please enter a valid name and price greater than 0',
+                  );
+                  return;
+                }
+                setShowConfirm(true);
+              }}
+            >
               Save
             </ConfirmButton>
           </div>
@@ -232,12 +368,11 @@ export default function Product({
             <CancelButton onClick={() => setShowConfirm(false)}>
               Cancel
             </CancelButton>
+
             <ConfirmButton
               onClick={() => {
-                handleAddProduct();
                 handleUpdate();
                 setShowConfirm(false);
-                setEditIndex(null);
               }}
             >
               Confirm
@@ -246,23 +381,25 @@ export default function Product({
         </Modal>
       )}
 
-      {deleteIndex !== null && (
-        <Modal title="Delete Product" onClose={() => setDeleteIndex(null)}>
+      {deleteId !== null && (
+        <Modal title="Delete Product" onClose={() => setDeleteId(null)}>
           <p className="mb-4">
             Do you want to delete this product{' '}
-            <strong>{products[deleteIndex].name}</strong>?
+            <strong>{products.find((p) => p.id === deleteId)?.name}</strong>
+            ?{' '}
           </p>
           <div className="flex justify-end gap-2">
-            <CancelButton onClick={() => setDeleteIndex(null)}>
+            <CancelButton onClick={() => setDeleteId(null)}>
               Cancel
             </CancelButton>
+
             <ConfirmButton
               onClick={() => {
-                handleDelete(deleteIndex);
-                setDeleteIndex(null);
+                handleDelete(deleteId);
+                setDeleteId(null);
               }}
             >
-              Confrim
+              Confirm
             </ConfirmButton>
           </div>
         </Modal>

@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import Modal from '../components/Modal';
+import FailedAlert from '../components/alerts/FailedAlert';
 import CancelButton from '../components/buttons/CancelButton';
-import { getUser } from '../services/userService';
 import ConfirmButton from '../components/buttons/ConfirmButton';
+import Modal from '../components/modals/Modal';
+import { getUser } from '../services/userService';
 import EditProfileFeature from './EditUser';
 
 type User = {
@@ -12,6 +13,7 @@ type User = {
   gender: string;
   age: number;
 };
+
 type GetProfileFeatureProps = {
   username: string | null;
 };
@@ -20,15 +22,17 @@ export default function GetProfileFeature({
   username,
 }: GetProfileFeatureProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const [user, setUser] = useState<User | null>(null);
-  const usernameFromLogin = username ?? '';
-  const [showEditProfile, setShowEditProfile] = useState(false); // <-- เพิ่มตรงนี้
+  const [showEditProfile, setShowEditProfile] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  const usernameFromLogin = username ?? '';
 
   const fetchUser = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      if (!token) throw new Error('Missing token or objectId');
+      if (!token) throw new Error('user or token not found');
       console.log('token:', token);
 
       const response = await getUser(token, usernameFromLogin);
@@ -38,15 +42,14 @@ export default function GetProfileFeature({
         response.data &&
         Array.isArray(response.data) &&
         response.data.length > 0
-      ) {
+      )
         setUser(response.data[0]);
-      } else {
-        alert('ไม่พบข้อมูลผู้ใช้');
-      }
+      else setErrorMessage('user not found');
+
       setIsModalOpen(true);
-    } catch (error) {
-      console.error('Failed to get user', error);
-      alert('ไม่สามารถโหลดข้อมูลผู้ใช้ได้');
+    } catch (err) {
+      console.error(err);
+      setErrorMessage('failed to get user');
     }
   };
 
@@ -70,12 +73,12 @@ export default function GetProfileFeature({
             <div className="text-left">{user.username}</div>
 
             <div className="text-right font-medium text-gray-600">
-              First Name:
+              Firstname:
             </div>
             <div className="text-left">{user.firstName}</div>
 
             <div className="text-right font-medium text-gray-600">
-              Last Name:
+              Lastname:
             </div>
             <div className="text-left">{user.lastName}</div>
 
@@ -85,10 +88,12 @@ export default function GetProfileFeature({
             <div className="text-right font-medium text-gray-600">Age:</div>
             <div className="text-left">{user.age}</div>
           </div>
+
           <div className="flex justify-end gap-2 mt-4">
             <CancelButton onClick={() => setIsModalOpen(false)}>
               Close
             </CancelButton>
+
             <ConfirmButton
               onClick={() => {
                 setIsModalOpen(false);
@@ -109,6 +114,13 @@ export default function GetProfileFeature({
             setIsEditModalOpen(false);
             setShowEditProfile(false);
           }}
+        />
+      )}
+
+      {errorMessage && (
+        <FailedAlert
+          message={errorMessage}
+          onClose={() => setErrorMessage('')}
         />
       )}
     </>
