@@ -1,11 +1,12 @@
+
+import { getSaleHistories, sale } from '../services/salesService';
 import { useEffect, useState } from 'react';
-import FailedAlert from '../components/alerts/FailedAlert';
 import CancelButton from '../components/buttons/CancelButton';
 import ConfirmButton from '../components/buttons/ConfirmButton';
-import TextField from '../components/inputs/TextField';
+import FailedAlert from '../components/alerts/FailedAlert';
 import Modal from '../components/modals/Modal';
 import Table from '../components/Table';
-import { getSaleHistories, sale } from '../services/salesService';
+import TextField from '../components/inputs/TextField';
 
 const columns = [
   { key: 'productId', label: 'Product ID' },
@@ -20,11 +21,6 @@ type SalesType = {
   totalPrice: number;
 };
 
-type SalesProps = {
-  isAddModalOpen: boolean;
-  closeAddModal: () => void;
-};
-
 type ApiSalesType = {
   _id: string;
   product: string;
@@ -37,7 +33,10 @@ type ApiSalesType = {
 
 const initialNewSale = { productId: '', quantity: '' };
 
-export default function Sales({ isAddModalOpen, closeAddModal }: SalesProps) {
+export default function Sales({
+  isAddModalOpen,
+  closeAddModal,
+}: ModalVisibilityProps) {
   const [sales, setSales] = useState<SalesType[]>([]);
   const [newSale, setNewSale] = useState(initialNewSale);
   const [isConfirmAddOpen, setConfirmAddOpen] = useState(false);
@@ -45,10 +44,7 @@ export default function Sales({ isAddModalOpen, closeAddModal }: SalesProps) {
 
   const fetchSales = async () => {
     try {
-      const token = localStorage.getItem('accessToken');
-      if (!token) throw new Error('token not found');
-
-      const sales: ApiSalesType[] = await getSaleHistories(undefined, token);
+      const sales: ApiSalesType[] = await getSaleHistories(undefined);
       const mappedSales = sales.map((item) => ({
         _id: item._id,
         quantity: item.quantity,
@@ -76,18 +72,12 @@ export default function Sales({ isAddModalOpen, closeAddModal }: SalesProps) {
   };
 
   const handleAddSale = async () => {
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      setErrorMessage('token not found');
-      return;
-    }
-
     const productId = newSale.productId.trim();
     const quantity = Number(newSale.quantity);
     if (!productId || isNaN(quantity)) return;
 
     try {
-      const created = await sale({ productId, quantity }, token);
+      const created = await sale({ productId, quantity });
       setSales([...sales, created]);
       setNewSale({ productId: '', quantity: '' });
       closeAddModal();

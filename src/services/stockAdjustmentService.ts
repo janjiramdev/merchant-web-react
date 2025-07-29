@@ -1,58 +1,18 @@
-export type StockPayload = {
-  productId: string;
-  quantity: number;
-  adjustType: 'add' | 'remove';
+import type { StockPayload } from '../interfaces/services.interface';
+import apiCaller from './apiCaller';
+
+export const adjustStock = async (data: StockPayload) => {
+  const response = await apiCaller.post('/stock-adjustment', data);
+  return response.data.data;
 };
 
-const handleResponse = async (res: Response) => {
-  if (!res.ok) {
-    let message = res.statusText;
-    try {
-      const errorData = await res.json();
-      if (errorData?.message) message = errorData.message;
-    } catch {
-      //
-    }
-    throw new Error(message);
-  }
+export const getStockAdjustHistories = async (productId?: string) => {
+  const params: Record<string, string> = {
+    sortBy: 'createdAt',
+    sortDirection: 'desc',
+  };
+  if (productId) params.productId = productId;
 
-  const json = await res.json();
-  return json.data;
+  const response = await apiCaller.get('/stock-adjustment', { params });
+  return response.data.data;
 };
-
-export async function adjustStock(data: StockPayload, token: string) {
-  const res = await fetch(
-    `${import.meta.env.VITE_SERVICE_ENDPOINT}/stock-adjustment`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    },
-  );
-  return handleResponse(res);
-}
-
-export async function getStockAdjustHistories(
-  productId?: string,
-  token?: string,
-) {
-  const url = new URL(
-    `${import.meta.env.VITE_SERVICE_ENDPOINT}/stock-adjustment`,
-  );
-
-  if (productId) url.searchParams.append('productId', productId);
-  url.searchParams.append('sortBy', 'createdAt');
-  url.searchParams.append('sortDirection', 'desc');
-
-  const response = await fetch(url.toString(), {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  return handleResponse(response);
-}

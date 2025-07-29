@@ -1,24 +1,15 @@
-import { useState } from 'react';
+import { createUser } from '../services/usersService';
 import { useNavigate } from 'react-router-dom';
-import FailedAlert from '../components/alerts/FailedAlert';
-import SuccessAlert from '../components/alerts/SucceedAlert';
+import { useState } from 'react';
 import ConfirmButton from '../components/buttons/ConfirmButton';
+import FailedAlert from '../components/alerts/FailedAlert';
 import PasswordToggleButton from '../components/buttons/PasswordToggleButton';
 import SelectField from '../components/inputs/SelectField';
+import SuccessAlert from '../components/alerts/SucceedAlert';
 import TextField from '../components/inputs/TextField';
-import { createUser } from '../services/userService';
-
-type FormData = {
-  username: string;
-  password: string;
-  firstname: string;
-  lastname: string;
-  gender: 'male' | 'female' | 'other' | '';
-  age: number | null;
-};
 
 export default function Register() {
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState<RegisterFormData>({
     username: '',
     password: '',
     firstname: '',
@@ -26,9 +17,9 @@ export default function Register() {
     gender: '',
     age: null,
   });
-  const [showSuccess, setShowSuccess] = useState(false);
+  const [showSuccess, setShowSuccess] = useState<boolean>(false);
   const [showFailed, setShowFailed] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -61,7 +52,6 @@ export default function Register() {
         age: formData.age ?? 0,
       });
       setShowSuccess(true);
-
       await new Promise((resolve) => setTimeout(resolve, 2000));
       navigate('/login');
     } catch {

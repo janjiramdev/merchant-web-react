@@ -1,17 +1,14 @@
-import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { login } from '../services/authService';
+import { useAuth } from '../context/AuthContext';
+import { useState } from 'react';
 import ConfirmButton from '../components/buttons/ConfirmButton';
 import PasswordToggleButton from '../components/buttons/PasswordToggleButton';
 import TextField from '../components/inputs/TextField';
-import { login } from '../services/authService';
-
-type FormData = {
-  username: string;
-  password: string;
-};
 
 export default function Login() {
-  const [formData, setFormData] = useState<FormData>({
+  const { setTokens } = useAuth();
+  const [formData, setFormData] = useState<LoginFormData>({
     username: '',
     password: '',
   });
@@ -27,29 +24,12 @@ export default function Login() {
     setIsLoading(true);
     setMessage('');
 
-    function parseJwt(token: string) {
-      try {
-        return JSON.parse(atob(token.split('.')[1]));
-      } catch (e) {
-        console.error('invalid token', e);
-        return null;
-      }
-    }
-
     try {
-      const data = await login(formData);
-      const { accessToken, refreshToken } = data.data;
-
-      const payload = parseJwt(accessToken);
-      const objectId = payload?.sub;
-      if (!objectId) throw new Error('user id not found in token');
-
-      localStorage.setItem('objectId', objectId);
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
-      localStorage.setItem('username', formData.username);
-
-      setMessage('login success');
+      const res = await login({
+        username: formData.username.trim(),
+        password: formData.password.trim(),
+      });
+      setTokens(res);
       navigate('/home');
     } catch {
       setMessage('incorrect username or password');
@@ -103,9 +83,7 @@ export default function Login() {
 
           {message && (
             <div
-              className={`text-sm text-center ${
-                message === 'login success!' ? 'text-green-600' : 'text-red-600'
-              }`}
+              className={`text-sm text-center ${message === 'login success' ? 'text-green-600' : 'text-red-600'}`}
             >
               {message}
             </div>

@@ -1,18 +1,18 @@
-import { useEffect, useState } from 'react';
-import Table from '../components/Table';
-import FailedAlert from '../components/alerts/FailedAlert';
-import CancelButton from '../components/buttons/CancelButton';
-import ConfirmButton from '../components/buttons/ConfirmButton';
-import DeleteButton from '../components/buttons/DeleteButton';
-import EditButton from '../components/buttons/EditButton';
-import TextField from '../components/inputs/TextField';
-import Modal from '../components/modals/Modal';
 import {
   createProduct,
   deleteProduct,
   searchProducts,
   updateProduct,
 } from '../services/productsService';
+import { useEffect, useState } from 'react';
+import CancelButton from '../components/buttons/CancelButton';
+import ConfirmButton from '../components/buttons/ConfirmButton';
+import DeleteButton from '../components/buttons/DeleteButton';
+import EditButton from '../components/buttons/EditButton';
+import FailedAlert from '../components/alerts/FailedAlert';
+import Modal from '../components/modals/Modal';
+import Table from '../components/Table';
+import TextField from '../components/inputs/TextField';
 
 const columns = [
   { key: 'id', label: 'Product ID' },
@@ -33,18 +33,27 @@ type ProductType = {
   totalSales: number;
 };
 
-type ProductProps = {
-  isAddModalOpen: boolean;
-  closeAddModal: () => void;
+type ProductPayload = {
+  name: string;
+  description?: string;
+  price: number;
 };
 
-const initialNewProduct = { name: '', description: '', price: 0 };
-const initialEditProduct = { name: '', description: '', price: 0 };
+const initialNewProduct: ProductPayload = {
+  name: '',
+  description: '',
+  price: 0,
+};
+const initialEditProduct: ProductPayload = {
+  name: '',
+  description: '',
+  price: 0,
+};
 
 export default function Product({
   isAddModalOpen,
   closeAddModal,
-}: ProductProps) {
+}: ModalVisibilityProps) {
   const [products, setProducts] = useState<ProductType[]>([]);
   const [newProduct, setNewProduct] = useState(initialNewProduct);
   const [editIndex, setEditIndex] = useState<number | null>(null);
@@ -55,24 +64,17 @@ export default function Product({
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetch = async () => {
       try {
-        const token = localStorage.getItem('accessToken');
-        if (!token) throw new Error('token not found');
-
-        const products = await searchProducts(undefined, token);
-        setProducts(products);
-      } catch {
+        const data = await searchProducts();
+        setProducts(data);
+      } catch (err) {
+        console.error(err);
         setErrorMessage('failed to fetch products');
       }
     };
-
-    if (!isAddModalOpen) {
-      setErrorMessage('');
-      setNewProduct(initialNewProduct);
-      fetchProducts();
-    }
-  }, [isAddModalOpen]);
+    fetch();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -90,9 +92,6 @@ export default function Product({
     }
 
     try {
-      const token = localStorage.getItem('accessToken');
-      if (!token) throw new Error('token not found');
-
       const payload: {
         name: string;
         price: number;
@@ -100,7 +99,7 @@ export default function Product({
       } = { name, price };
 
       if (description && description !== '') payload.description = description;
-      const createdProduct = await createProduct(payload, token);
+      const createdProduct = await createProduct(payload);
 
       setProducts([...products, createdProduct]);
       setNewProduct({ name: '', description: '', price: 0 });
@@ -142,13 +141,6 @@ export default function Product({
 
     const product = products[editIndex];
     const id = product.id;
-
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      setErrorMessage('token not found');
-      return;
-    }
-
     const name = editProduct.name.trim();
     const price = Number(editProduct.price);
     const description = editProduct.description?.trim();
@@ -168,7 +160,7 @@ export default function Product({
     }
 
     try {
-      await updateProduct(id, payload, token);
+      await updateProduct(id, payload);
 
       const updated = [...products];
       updated[editIndex] = {
@@ -189,14 +181,8 @@ export default function Product({
   };
 
   const handleDelete = async (id: string) => {
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      setErrorMessage('token not found');
-      return;
-    }
-
     try {
-      await deleteProduct(id, token);
+      await deleteProduct(id);
       setProducts(products.filter((p) => p.id !== id));
     } catch (err) {
       console.error(err);

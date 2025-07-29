@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import ConfirmButton from '../components/buttons/ConfirmButton';
-import ViewButton from '../components/buttons/ViewButton';
 import Product from '../features/Product';
 import Sales from '../features/Sales';
 import StockAdjustment from '../features/StockAdjustment';
+import ViewButton from '../components/buttons/ViewButton';
 
 export default function HomePage() {
   const [tableView, setTableView] = useState<string>('Product');
@@ -12,19 +12,19 @@ export default function HomePage() {
   const [isStockAdjustmentModalOpen, setIsStockAdjustmentModalOpen] =
     useState(false);
 
-  function openAddModal() {
+  const openAddModal = () => {
     if (tableView === 'Product') setIsProductModalOpen(true);
     else if (tableView === 'StockAdjustment')
       setIsStockAdjustmentModalOpen(true);
     else if (tableView === 'Sales') setIsSalesModalOpen(true);
-  }
+  };
 
-  function closeAddModal() {
+  const closeAddModal = () => {
     if (tableView === 'Product') setIsProductModalOpen(false);
     else if (tableView === 'StockAdjustment')
       setIsStockAdjustmentModalOpen(false);
     else if (tableView === 'Sales') setIsSalesModalOpen(false);
-  }
+  };
 
   return (
     <div className="p-6 max-w-4xl mx-auto">

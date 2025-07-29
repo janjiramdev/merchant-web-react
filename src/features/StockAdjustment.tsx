@@ -1,14 +1,14 @@
-import { useEffect, useState } from 'react';
-import FailedAlert from '../components/alerts/FailedAlert';
-import CancelButton from '../components/buttons/CancelButton';
-import ConfirmButton from '../components/buttons/ConfirmButton';
-import TextField from '../components/inputs/TextField';
-import Modal from '../components/modals/Modal';
-import Table from '../components/Table';
 import {
   adjustStock,
   getStockAdjustHistories,
 } from '../services/stockAdjustmentService';
+import { useEffect, useState } from 'react';
+import CancelButton from '../components/buttons/CancelButton';
+import ConfirmButton from '../components/buttons/ConfirmButton';
+import FailedAlert from '../components/alerts/FailedAlert';
+import Modal from '../components/modals/Modal';
+import Table from '../components/Table';
+import TextField from '../components/inputs/TextField';
 
 const columns = [
   { key: 'productId', label: 'Product ID' },
@@ -21,11 +21,6 @@ type StockAdjustmentType = {
   productId: string;
   adjustType: 'add' | 'remove';
   quantity: number;
-};
-
-type StockAdjustmentProps = {
-  isAddModalOpen: boolean;
-  closeAddModal: () => void;
 };
 
 type ApiStockType = {
@@ -47,7 +42,7 @@ const initialNewStockAdjustment = {
 export default function StockAdjustment({
   isAddModalOpen,
   closeAddModal,
-}: StockAdjustmentProps) {
+}: ModalVisibilityProps) {
   const [stockAdjustment, setStockAdjustment] = useState<StockAdjustmentType[]>(
     [],
   );
@@ -57,13 +52,7 @@ export default function StockAdjustment({
 
   const fetchStocks = async () => {
     try {
-      const token = localStorage.getItem('accessToken');
-      if (!token) throw new Error('token not found');
-
-      const stocks: ApiStockType[] = await getStockAdjustHistories(
-        undefined,
-        token,
-      );
+      const stocks: ApiStockType[] = await getStockAdjustHistories(undefined);
       const mappedStocks = stocks.map((item) => ({
         ...item,
         productId: item.product,
@@ -110,12 +99,8 @@ export default function StockAdjustment({
       setErrorMessage('quantity must be greater than 0');
       return;
     }
-
-    const token = localStorage.getItem('accessToken');
-    if (!token) throw new Error('token not found');
-
     try {
-      await adjustStock({ productId, adjustType, quantity }, token);
+      await adjustStock({ productId, adjustType, quantity });
       await fetchStocks();
       setNewStock(initialNewStockAdjustment);
       closeAddModal();

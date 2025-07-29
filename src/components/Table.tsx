@@ -12,7 +12,7 @@ type TableProps<T> = {
   renderActions?: (row: T, index: number) => React.ReactNode;
 };
 
-function IdCell({ value }: { value: string }) {
+const IdCell = ({ value }: { value: string }) => {
   const [showFull, setShowFull] = useState(false);
   const handleClick = () => setShowFull((prev) => !prev);
   const displayValue = showFull ? value : value.slice(0, 8) + '...';
@@ -26,7 +26,7 @@ function IdCell({ value }: { value: string }) {
       {displayValue}
     </span>
   );
-}
+};
 
 export default function Table<T>({
   columns,

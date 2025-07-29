@@ -4,11 +4,7 @@ type ViewButtonProps = {
   onClick: (view: string) => void;
 };
 
-export default function ViewButton({
-  view,
-  activeView,
-  onClick,
-}: ViewButtonProps) {
+export default function  ViewButton  ({ view, activeView, onClick }: ViewButtonProps) {
   const isActive = view === activeView;
 
   return (
@@ -21,4 +17,4 @@ export default function ViewButton({
       {view.replace(/([A-Z])/g, ' $1').trim()}
     </button>
   );
-}
+};

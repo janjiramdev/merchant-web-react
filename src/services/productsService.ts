@@ -1,83 +1,29 @@
-export type ProductPayload = {
-  name?: string;
-  description?: string;
-  price?: number;
-};
+import type { ProductPayload } from '../interfaces/services.interface';
+import apiCaller from './apiCaller';
 
-const handleResponse = async (res: Response) => {
-  if (!res.ok) {
-    let message = res.statusText;
-    try {
-      const errorData = await res.json();
-      if (errorData?.message) message = errorData.message;
-    } catch {
-      //
-    }
-    throw new Error(message);
+export const searchProducts = async (name?: string) => {
+  const params = new URLSearchParams();
+  if (name !== undefined && name !== 'undefined' && name !== '') {
+    params.append('name', name);
   }
+  params.append('sortBy', 'name');
+  params.append('sortDirection', 'asc');
 
-  const json = await res.json();
-  return json.data;
+  const response = await apiCaller.get('/products', { params });
+  return response.data.data;
 };
 
-export async function searchProducts(name?: string, token?: string) {
-  const url = new URL(`${import.meta.env.VITE_SERVICE_ENDPOINT}/products`);
+export const createProduct = async (data: ProductPayload) => {
+  const response = await apiCaller.post('/products', data);
+  return response.data.data;
+};
 
-  if (name !== undefined && name !== 'undefined' && name !== '')
-    url.searchParams.append('name', name);
-  url.searchParams.append('sortBy', 'name');
-  url.searchParams.append('sortDirection', 'asc');
+export const updateProduct = async (id: string, data: ProductPayload) => {
+  const response = await apiCaller.patch(`/products/${id}`, data);
+  return response.data.data;
+};
 
-  const response = await fetch(url.toString(), {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  return handleResponse(response);
-}
-
-export async function createProduct(data: ProductPayload, token: string) {
-  const res = await fetch(`${import.meta.env.VITE_SERVICE_ENDPOINT}/products`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(data),
-  });
-  return handleResponse(res);
-}
-
-export async function updateProduct(
-  id: string,
-  data: ProductPayload,
-  token: string,
-) {
-  const res = await fetch(
-    `${import.meta.env.VITE_SERVICE_ENDPOINT}/products/${id}`,
-    {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    },
-  );
-  return handleResponse(res);
-}
-
-export async function deleteProduct(id: string, token: string) {
-  const res = await fetch(
-    `${import.meta.env.VITE_SERVICE_ENDPOINT}/products/${id}`,
-    {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  );
-  return handleResponse(res);
-}
+export const deleteProduct = async (id: string) => {
+  const response = await apiCaller.delete(`/products/${id}`);
+  return response.data.data;
+};

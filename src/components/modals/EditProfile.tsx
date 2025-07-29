@@ -1,8 +1,8 @@
 import CancelButton from '../buttons/CancelButton';
 import ConfirmButton from '../buttons/ConfirmButton';
+import Modal from './Modal';
 import SelectField from '../inputs/SelectField';
 import TextField from '../inputs/TextField';
-import Modal from './Modal';
 
 type EditProfileModalProps = {
   isOpen: boolean;

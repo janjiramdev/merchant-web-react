@@ -1,18 +1,10 @@
+import { getUser } from '../services/usersService';
 import { useState } from 'react';
-import FailedAlert from '../components/alerts/FailedAlert';
 import CancelButton from '../components/buttons/CancelButton';
 import ConfirmButton from '../components/buttons/ConfirmButton';
+import EditProfileFeature from './EditProfile';
+import FailedAlert from '../components/alerts/FailedAlert';
 import Modal from '../components/modals/Modal';
-import { getUser } from '../services/userService';
-import EditProfileFeature from './EditUser';
-
-type User = {
-  username: string;
-  firstName: string;
-  lastName: string;
-  gender: string;
-  age: number;
-};
 
 type GetProfileFeatureProps = {
   username: string | null;
@@ -26,27 +18,24 @@ export default function GetProfileFeature({
   const [user, setUser] = useState<User | null>(null);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-
-  const usernameFromLogin = username ?? '';
+  const closeEditModal = () => {
+    setIsEditModalOpen(false);
+    setShowEditProfile(false);
+  };
 
   const fetchUser = async () => {
+    if (!username) {
+      setErrorMessage('invalid username');
+      return;
+    }
     try {
-      const token = localStorage.getItem('accessToken');
-      if (!token) throw new Error('user or token not found');
-      console.log('token:', token);
-
-      const response = await getUser(token, usernameFromLogin);
-      console.log('data from API:', response);
-
-      if (
-        response.data &&
-        Array.isArray(response.data) &&
-        response.data.length > 0
-      )
-        setUser(response.data[0]);
-      else setErrorMessage('user not found');
-
-      setIsModalOpen(true);
+      const data = await getUser(username);
+      if (Array.isArray(data) && data.length > 0) {
+        setUser(data[0]);
+        setIsModalOpen(true);
+      } else {
+        setErrorMessage('user not found');
+      }
     } catch (err) {
       console.error(err);
       setErrorMessage('failed to get user');
@@ -55,12 +44,12 @@ export default function GetProfileFeature({
 
   return (
     <>
-      {usernameFromLogin && (
+      {username && (
         <button
           onClick={fetchUser}
           className="font-medium hover:text-black transition-colors"
         >
-          {usernameFromLogin}
+          {username}
         </button>
       )}
 
@@ -107,13 +96,11 @@ export default function GetProfileFeature({
         </Modal>
       )}
 
-      {showEditProfile && (
+      {showEditProfile && user && (
         <EditProfileFeature
+          user={user}
           isOpen={isEditModalOpen}
-          onClose={() => {
-            setIsEditModalOpen(false);
-            setShowEditProfile(false);
-          }}
+          onClose={closeEditModal}
         />
       )}
 

@@ -1,12 +1,12 @@
 import EyeIcon from '../../assets/EyeIcon';
 import EyeOffIcon from '../../assets/EyeOffIcon';
 
-type Props = {
+type ToggleProps = {
   show: boolean;
   toggle: () => void;
 };
 
-export default function PasswordToggleButton({ show, toggle }: Props) {
+export default function PasswordToggleButton({ show, toggle }: ToggleProps) {
   return (
     <button
       type="button"
