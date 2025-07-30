@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import ConfirmButton from '../components/buttons/ConfirmButton';
+import TableViewButton from '../components/buttons/TableViewButton';
 import Product from '../features/Product';
 import Sales from '../features/Sales';
 import StockAdjustment from '../features/StockAdjustment';
-import ViewButton from '../components/buttons/ViewButton';
 
 export default function HomePage() {
   const [tableView, setTableView] = useState<string>('Product');
-  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
-  const [isSalesModalOpen, setIsSalesModalOpen] = useState(false);
+  const [isProductModalOpen, setIsProductModalOpen] = useState<boolean>(false);
+  const [isSalesModalOpen, setIsSalesModalOpen] = useState<boolean>(false);
   const [isStockAdjustmentModalOpen, setIsStockAdjustmentModalOpen] =
-    useState(false);
+    useState<boolean>(false);
 
   const openAddModal = () => {
     if (tableView === 'Product') setIsProductModalOpen(true);
@@ -31,10 +31,10 @@ export default function HomePage() {
       <div className="mb-6 flex justify-between items-center">
         <div className="mb-6 flex gap-4">
           {['Product', 'StockAdjustment', 'Sales'].map((view) => (
-            <ViewButton
+            <TableViewButton
               key={view}
-              view={view}
-              activeView={tableView}
+              nextView={view}
+              currentView={tableView}
               onClick={setTableView}
             />
           ))}
@@ -46,24 +46,18 @@ export default function HomePage() {
       </div>
 
       {tableView === 'Product' && (
-        <Product
-          isAddModalOpen={isProductModalOpen}
-          closeAddModal={closeAddModal}
-        />
+        <Product isOpen={isProductModalOpen} close={closeAddModal} />
       )}
 
       {tableView === 'StockAdjustment' && (
         <StockAdjustment
-          isAddModalOpen={isStockAdjustmentModalOpen}
-          closeAddModal={closeAddModal}
+          isOpen={isStockAdjustmentModalOpen}
+          close={closeAddModal}
         />
       )}
 
       {tableView === 'Sales' && (
-        <Sales
-          isAddModalOpen={isSalesModalOpen}
-          closeAddModal={closeAddModal}
-        />
+        <Sales isOpen={isSalesModalOpen} close={closeAddModal} />
       )}
     </div>
   );

@@ -1,44 +1,35 @@
-import { getUser } from '../services/usersService';
 import { useState } from 'react';
+import FailedAlert from '../components/alerts/FailedAlert';
 import CancelButton from '../components/buttons/CancelButton';
 import ConfirmButton from '../components/buttons/ConfirmButton';
-import EditProfileFeature from './EditProfile';
-import FailedAlert from '../components/alerts/FailedAlert';
 import Modal from '../components/modals/Modal';
+import type { IUser } from '../interfaces/features.interface';
+import { getUser } from '../services/usersService';
+import EditProfileFeature from './EditProfile';
 
-type GetProfileFeatureProps = {
-  username: string | null;
-};
+interface GetProfileFeatureProps {
+  username: string | undefined;
+}
 
-export default function GetProfileFeature({
-  username,
-}: GetProfileFeatureProps) {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-  const [user, setUser] = useState<User | null>(null);
-  const [showEditProfile, setShowEditProfile] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const closeEditModal = () => {
-    setIsEditModalOpen(false);
-    setShowEditProfile(false);
-  };
+export default function GetProfile({ username }: GetProfileFeatureProps) {
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string>();
+  const [user, setUser] = useState<IUser | undefined>(undefined);
+  const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
 
   const fetchUser = async () => {
-    if (!username) {
-      setErrorMessage('invalid username');
-      return;
-    }
+    if (!username) return;
+
     try {
       const data = await getUser(username);
       if (Array.isArray(data) && data.length > 0) {
         setUser(data[0]);
         setIsModalOpen(true);
-      } else {
-        setErrorMessage('user not found');
-      }
-    } catch (err) {
-      console.error(err);
-      setErrorMessage('failed to get user');
+      } else setErrorMessage('User not found');
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : 'Get user failed',
+      );
     }
   };
 
@@ -86,7 +77,6 @@ export default function GetProfileFeature({
             <ConfirmButton
               onClick={() => {
                 setIsModalOpen(false);
-                setShowEditProfile(true);
                 setIsEditModalOpen(true);
               }}
             >
@@ -96,11 +86,11 @@ export default function GetProfileFeature({
         </Modal>
       )}
 
-      {showEditProfile && user && (
+      {isEditModalOpen && user && (
         <EditProfileFeature
-          user={user}
+          data={user}
           isOpen={isEditModalOpen}
-          onClose={closeEditModal}
+          onClose={() => setIsEditModalOpen(false)}
         />
       )}
 

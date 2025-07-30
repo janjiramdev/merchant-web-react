@@ -1,18 +1,32 @@
-import type { StockPayload } from '../interfaces/services.interface';
-import apiCaller from './apiCaller';
+import type {
+  IAdjustStockData,
+  IStockAdjustHistoriesResponse,
+} from '../interfaces/services.interface';
+import client from './client';
 
-export const adjustStock = async (data: StockPayload) => {
-  const response = await apiCaller.post('/stock-adjustment', data);
-  return response.data.data;
+export const getStockAdjustHistories = async () => {
+  try {
+    const response = await client.get('/stock-adjustment', {
+      params: {
+        sortBy: 'createdAt',
+        sortDirection: 'desc',
+      },
+    });
+    return response.data.map((res: IStockAdjustHistoriesResponse) => {
+      return { ...res, productId: res.product._id };
+    });
+  } catch (err: unknown) {
+    const error = err as Error;
+    throw new Error(error.message ?? JSON.stringify(err));
+  }
 };
 
-export const getStockAdjustHistories = async (productId?: string) => {
-  const params: Record<string, string> = {
-    sortBy: 'createdAt',
-    sortDirection: 'desc',
-  };
-  if (productId) params.productId = productId;
-
-  const response = await apiCaller.get('/stock-adjustment', { params });
-  return response.data.data;
+export const adjustStock = async (data: IAdjustStockData) => {
+  try {
+    const response = await client.post('/stock-adjustment', data);
+    return response.data;
+  } catch (err: unknown) {
+    const error = err as Error;
+    throw new Error(error.message ?? JSON.stringify(err));
+  }
 };

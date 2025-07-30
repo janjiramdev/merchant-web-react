@@ -1,32 +1,33 @@
-import { createUser } from '../services/usersService';
+import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
-import ConfirmButton from '../components/buttons/ConfirmButton';
 import FailedAlert from '../components/alerts/FailedAlert';
+import SuccessAlert from '../components/alerts/SucceedAlert';
+import ConfirmButton from '../components/buttons/ConfirmButton';
 import PasswordToggleButton from '../components/buttons/PasswordToggleButton';
 import SelectField from '../components/inputs/SelectField';
-import SuccessAlert from '../components/alerts/SucceedAlert';
 import TextField from '../components/inputs/TextField';
+import type { ICreateUserData } from '../interfaces/services.interface';
+import { createUser } from '../services/usersService';
 
-export default function Register() {
-  const [formData, setFormData] = useState<RegisterFormData>({
-    username: '',
-    password: '',
-    firstname: '',
-    lastname: '',
-    gender: '',
-    age: null,
-  });
-  const [showSuccess, setShowSuccess] = useState<boolean>(false);
-  const [showFailed, setShowFailed] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-
+export default function RegisterPage() {
   const navigate = useNavigate();
 
+  const [formData, setFormData] = useState<ICreateUserData>({
+    username: '',
+    password: '',
+    firstName: '',
+    lastName: '',
+    gender: 'other',
+    age: 0,
+  });
+  const [showSuccess, setShowSuccess] = useState<boolean>(false);
+  const [showFailed, setShowFailed] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string>();
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -35,7 +36,7 @@ export default function Register() {
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setShowSuccess(false);
@@ -46,20 +47,27 @@ export default function Register() {
       await createUser({
         username: formData.username,
         password: formData.password,
-        firstName: formData.firstname,
-        lastName: formData.lastname,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
         gender: formData.gender,
         age: formData.age ?? 0,
       });
+
       setShowSuccess(true);
-      await new Promise((resolve) => setTimeout(resolve, 2000));
       navigate('/login');
-    } catch {
-      setErrorMessage('something went wrong. please try again');
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : 'Register Failed',
+      );
       setShowFailed(true);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const onCloseFailed = () => {
+    setErrorMessage('');
+    setShowFailed(false);
   };
 
   return (
@@ -73,10 +81,7 @@ export default function Register() {
 
         {showFailed && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/30">
-            <FailedAlert
-              message={errorMessage}
-              onClose={() => setErrorMessage('')}
-            />
+            <FailedAlert message={errorMessage} onClose={onCloseFailed} />
           </div>
         )}
 
@@ -111,8 +116,8 @@ export default function Register() {
                 className="w-full rounded-lg border border-gray-300 p-2 focus:border-blue-500 focus:outline-none"
               />
               <PasswordToggleButton
-                show={showPassword}
-                toggle={() => setShowPassword(!showPassword)}
+                isShow={showPassword}
+                onClick={() => setShowPassword(!showPassword)}
               />
             </div>
           </div>
@@ -122,9 +127,9 @@ export default function Register() {
               Firstname
             </label>
             <TextField
-              name="firstname"
+              name="firstName"
               type="text"
-              value={formData.firstname}
+              value={formData.firstName}
               onChange={handleChange}
               required
             />
@@ -135,9 +140,9 @@ export default function Register() {
               Lastname
             </label>
             <TextField
-              name="lastname"
+              name="lastName"
               type="text"
-              value={formData.lastname}
+              value={formData.lastName}
               onChange={handleChange}
             />
           </div>
@@ -170,6 +175,7 @@ export default function Register() {
               onChange={handleChange}
             />
           </div>
+
           <ConfirmButton type="submit" isLoading={isLoading}>
             Create Account
           </ConfirmButton>

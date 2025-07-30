@@ -1,15 +1,16 @@
-import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import CancelButton from '../components/buttons/CancelButton';
 import ConfirmButton from '../components/buttons/ConfirmButton';
-import GetProfileFeature from './GetProfile';
 import Modal from '../components/modals/Modal';
+import { useSession } from '../contexts/sessions/SessionContext';
+import GetProfileFeature from './GetProfile';
 
 export default function NavBar() {
-  const { user, removeTokens } = useAuth();
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const navigate = useNavigate();
+  const { sessionUser, removeTokens } = useSession();
+
+  const [showLogoutModal, setShowLogoutModal] = useState<boolean>(false);
 
   const handleLogout = () => {
     removeTokens();
@@ -23,23 +24,13 @@ export default function NavBar() {
         <div className="text-xl font-bold tracking-wide">MERCHANT</div>
 
         <div className="flex items-center gap-4">
-          <GetProfileFeature username={user?.username ?? 'Guest'} />
-
-          {user ? (
-            <button
-              onClick={() => setShowLogoutModal(true)}
-              className="rounded-lg bg-gray-500 px-4 py-2 text-sm font-semibold hover:bg-red-600 transition-colors"
-            >
-              Logout
-            </button>
-          ) : (
-            <button
-              onClick={() => navigate('/login')}
-              className="rounded-lg bg-green-500 px-4 py-2 text-sm font-semibold hover:bg-green-600 transition-colors"
-            >
-              Login
-            </button>
-          )}
+          <GetProfileFeature username={sessionUser?.username ?? 'Guest'} />
+          <button
+            onClick={() => setShowLogoutModal(true)}
+            className="rounded-lg bg-gray-500 px-4 py-2 text-sm font-semibold hover:bg-red-600 transition-colors"
+          >
+            Logout
+          </button>
         </div>
       </header>
 

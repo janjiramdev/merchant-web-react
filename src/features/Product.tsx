@@ -1,21 +1,30 @@
+import { useEffect, useState, type ChangeEvent } from 'react';
+import FailedAlert from '../components/alerts/FailedAlert';
+import CancelButton from '../components/buttons/CancelButton';
+import ConfirmButton from '../components/buttons/ConfirmButton';
+import DeleteButton from '../components/buttons/DeleteButton';
+import EditButton from '../components/buttons/EditButton';
+import TextField from '../components/inputs/TextField';
+import Modal from '../components/modals/Modal';
+import Table from '../components/Table';
+import type {
+  IAddModalProps,
+  IProduct,
+} from '../interfaces/features.interface';
 import {
   createProduct,
   deleteProduct,
   searchProducts,
   updateProduct,
 } from '../services/productsService';
-import { useEffect, useState } from 'react';
-import CancelButton from '../components/buttons/CancelButton';
-import ConfirmButton from '../components/buttons/ConfirmButton';
-import DeleteButton from '../components/buttons/DeleteButton';
-import EditButton from '../components/buttons/EditButton';
-import FailedAlert from '../components/alerts/FailedAlert';
-import Modal from '../components/modals/Modal';
-import Table from '../components/Table';
-import TextField from '../components/inputs/TextField';
+import type {
+  ICreateProductData,
+  ISearchProductResponse,
+  IUpdateProductData,
+} from '../interfaces/services.interface';
 
 const columns = [
-  { key: 'id', label: 'Product ID' },
+  { key: '_id', label: 'Product ID' },
   { key: 'name', label: 'Name' },
   { key: 'description', label: 'Description' },
   { key: 'currentStock', label: 'Stock' },
@@ -24,59 +33,25 @@ const columns = [
   { key: 'actions', label: 'ACTIONS' },
 ] as const;
 
-type ProductType = {
-  id: string;
-  name: string;
-  description?: string;
-  currentStock: number;
-  price: number;
-  totalSales: number;
-};
+export default function Product({ isOpen, close }: IAddModalProps) {
+  const [products, setProducts] = useState<IProduct[]>([]);
+  const [newProduct, setNewProduct] = useState<ICreateProductData>({
+    name: '',
+    description: '',
+    price: 0,
+  });
+  const [editIndex, setEditIndex] = useState<number | undefined>(undefined);
+  const [editProduct, setEditProduct] = useState<IUpdateProductData>({
+    name: '',
+    description: '',
+    price: 0,
+  });
+  const [deleteId, setDeleteId] = useState<string | undefined>(undefined);
+  const [showConfirm, setShowConfirm] = useState<boolean>(false);
+  const [isConfirmAddOpen, setConfirmAddOpen] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string>();
 
-type ProductPayload = {
-  name: string;
-  description?: string;
-  price: number;
-};
-
-const initialNewProduct: ProductPayload = {
-  name: '',
-  description: '',
-  price: 0,
-};
-const initialEditProduct: ProductPayload = {
-  name: '',
-  description: '',
-  price: 0,
-};
-
-export default function Product({
-  isAddModalOpen,
-  closeAddModal,
-}: ModalVisibilityProps) {
-  const [products, setProducts] = useState<ProductType[]>([]);
-  const [newProduct, setNewProduct] = useState(initialNewProduct);
-  const [editIndex, setEditIndex] = useState<number | null>(null);
-  const [editProduct, setEditProduct] = useState(initialEditProduct);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [isConfirmAddOpen, setConfirmAddOpen] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-
-  useEffect(() => {
-    const fetch = async () => {
-      try {
-        const data = await searchProducts();
-        setProducts(data);
-      } catch (err) {
-        console.error(err);
-        setErrorMessage('failed to fetch products');
-      }
-    };
-    fetch();
-  }, []);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setNewProduct((prev) => ({ ...prev, [name]: value }));
   };
@@ -103,13 +78,11 @@ export default function Product({
 
       setProducts([...products, createdProduct]);
       setNewProduct({ name: '', description: '', price: 0 });
-      closeAddModal();
-    } catch (err) {
-      console.error(err);
-      let message = 'failed to create product';
-      if (err instanceof Error) message = err.message;
-      else if (typeof err === 'string') message = err;
-      setErrorMessage(message);
+      close();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : 'Create Product Failed',
+      );
     }
   };
 
@@ -137,11 +110,11 @@ export default function Product({
   };
 
   const handleUpdate = async () => {
-    if (editIndex === null) return;
+    if (editIndex === undefined) return;
 
     const product = products[editIndex];
-    const id = product.id;
-    const name = editProduct.name.trim();
+    const id = product._id;
+    const name = editProduct?.name?.trim();
     const price = Number(editProduct.price);
     const description = editProduct.description?.trim();
 
@@ -169,34 +142,44 @@ export default function Product({
       };
 
       setProducts(updated);
-      setEditIndex(null);
+      setEditIndex(undefined);
       setShowConfirm(false);
-    } catch (err) {
-      console.error(err);
-      let message = 'failed to update product';
-      if (err instanceof Error) message = err.message;
-      else if (typeof err === 'string') message = err;
-      setErrorMessage(message);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : 'Update Product Failed',
+      );
     }
   };
 
   const handleDelete = async (id: string) => {
     try {
       await deleteProduct(id);
-      setProducts(products.filter((p) => p.id !== id));
-    } catch (err) {
-      console.error(err);
-      let message = 'failed to delete product';
-      if (err instanceof Error) message = err.message;
-      else if (typeof err === 'string') message = err;
-      setErrorMessage(message);
+      setProducts(products.filter((p) => p._id !== id));
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : 'Delete Product Failed',
+      );
     }
   };
 
+  useEffect(() => {
+    const fetch = async () => {
+      try {
+        const data: ISearchProductResponse[] = await searchProducts();
+        setProducts(data);
+      } catch (error) {
+        setErrorMessage(
+          error instanceof Error ? error.message : 'Search Product Failed',
+        );
+      }
+    };
+    fetch();
+  }, []);
+
   return (
     <div>
-      {isAddModalOpen && (
-        <Modal title="Add New Product" onClose={closeAddModal}>
+      {isOpen && (
+        <Modal title="Add New Product" onClose={close}>
           <div className="grid gap-2 mb-4">
             {errorMessage && (
               <FailedAlert
@@ -234,7 +217,7 @@ export default function Product({
           </div>
 
           <div className="flex justify-end gap-2">
-            <CancelButton onClick={closeAddModal}>Cancel</CancelButton>
+            <CancelButton onClick={close}>Cancel</CancelButton>
             <ConfirmButton onClick={handleAddClick}>Add</ConfirmButton>
           </div>
         </Modal>
@@ -243,13 +226,13 @@ export default function Product({
       <Table
         columns={columns}
         rows={products}
-        rowKey="id"
+        rowKey="_id"
         renderActions={(row) => (
           <div className="flex justify-center gap-2">
-            <DeleteButton onClick={() => setDeleteId(row.id)} />
+            <DeleteButton onClick={() => setDeleteId(row._id)} />
             <EditButton
               onClick={() =>
-                handleEdit(products.findIndex((p) => p.id === row.id))
+                handleEdit(products.findIndex((p) => p._id === row._id))
               }
             />
           </div>
@@ -266,8 +249,8 @@ export default function Product({
         </Modal>
       )}
 
-      {editIndex !== null && (
-        <Modal title="Edit Product" onClose={() => setEditIndex(null)}>
+      {editIndex !== undefined && (
+        <Modal title="Edit Product" onClose={() => setEditIndex(undefined)}>
           <div className="grid gap-2 mb-4">
             {errorMessage && (
               <FailedAlert
@@ -319,7 +302,7 @@ export default function Product({
           <div className="flex justify-end gap-2">
             <CancelButton
               onClick={() => {
-                setEditIndex(null);
+                setEditIndex(undefined);
                 setErrorMessage('');
               }}
             >
@@ -330,7 +313,7 @@ export default function Product({
               onClick={() => {
                 if (
                   !editProduct.name ||
-                  editProduct.price == null ||
+                  editProduct.price == undefined ||
                   editProduct.price <= 0
                 ) {
                   setErrorMessage(
@@ -367,22 +350,22 @@ export default function Product({
         </Modal>
       )}
 
-      {deleteId !== null && (
-        <Modal title="Delete Product" onClose={() => setDeleteId(null)}>
+      {deleteId !== undefined && (
+        <Modal title="Delete Product" onClose={() => setDeleteId(undefined)}>
           <p className="mb-4">
             Do you want to delete this product{' '}
-            <strong>{products.find((p) => p.id === deleteId)?.name}</strong>
+            <strong>{products.find((p) => p._id === deleteId)?.name}</strong>
             ?{' '}
           </p>
           <div className="flex justify-end gap-2">
-            <CancelButton onClick={() => setDeleteId(null)}>
+            <CancelButton onClick={() => setDeleteId(undefined)}>
               Cancel
             </CancelButton>
 
             <ConfirmButton
               onClick={() => {
                 handleDelete(deleteId);
-                setDeleteId(null);
+                setDeleteId(undefined);
               }}
             >
               Confirm

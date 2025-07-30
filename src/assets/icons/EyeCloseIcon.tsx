@@ -1,4 +1,4 @@
-export default function EyeOffIcon() {
+export default function EyeCloseIcon() {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"

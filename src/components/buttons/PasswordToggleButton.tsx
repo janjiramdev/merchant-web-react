@@ -1,20 +1,23 @@
-import EyeIcon from '../../assets/EyeIcon';
-import EyeOffIcon from '../../assets/EyeOffIcon';
+import EyeCloseIcon from '../../assets/icons/EyeCloseIcon';
+import EyeOpenIcon from '../../assets/icons/EyeOpenIcon';
 
-type ToggleProps = {
-  show: boolean;
-  toggle: () => void;
-};
+interface IShowPasswordToggleButtonProps {
+  isShow: boolean;
+  onClick: () => void;
+}
 
-export default function PasswordToggleButton({ show, toggle }: ToggleProps) {
+export default function ShowPasswordToggleButton({
+  isShow,
+  onClick,
+}: IShowPasswordToggleButtonProps) {
   return (
     <button
       type="button"
-      onClick={toggle}
+      onClick={onClick}
       className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900"
-      aria-label={show ? 'Show password' : 'Hide password'}
+      aria-label={isShow ? 'Show password' : 'Hide password'}
     >
-      {show ? <EyeOffIcon /> : <EyeIcon />}
+      {isShow ? <EyeCloseIcon /> : <EyeOpenIcon />}
     </button>
   );
 }

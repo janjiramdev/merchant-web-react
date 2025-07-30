@@ -1,10 +1,10 @@
 import { Trash2 } from 'lucide-react';
 
-type DeleteButtonProps = {
+interface IDeleteButtonProps {
   onClick: () => void;
-};
+}
 
-export default function DeleteButton({ onClick }: DeleteButtonProps) {
+export default function DeleteButton({ onClick }: IDeleteButtonProps) {
   return (
     <button
       onClick={onClick}

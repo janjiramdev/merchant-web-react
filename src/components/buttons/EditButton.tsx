@@ -1,10 +1,10 @@
 import { Pencil } from 'lucide-react';
 
-type EditButtonProps = {
+interface IEditButtonProps {
   onClick: () => void;
-};
+}
 
-export default function EditButton({ onClick }: EditButtonProps) {
+export default function EditButton({ onClick }: IEditButtonProps) {
   return (
     <button
       onClick={onClick}

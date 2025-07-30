@@ -1,7 +1,7 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useSession } from '../contexts/sessions/SessionContext';
 
-export default function ExternalRoute() {
+export default function InternalRoute() {
   const { isAuthenticated } = useSession();
-  return isAuthenticated ? <Navigate to="/home" /> : <Outlet />;
+  return isAuthenticated ? <Outlet /> : <Navigate to="/login" />;
 }

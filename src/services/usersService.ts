@@ -1,30 +1,41 @@
-import type { CreateUserPayload } from '../interfaces/services.interface';
-import apiCaller from './apiCaller';
-
-type UpdateUserPayload = Partial<Omit<CreateUserPayload, 'username'>> & {
-  password?: string;
-};
-
-export const createUser = async (data: CreateUserPayload) => {
-  const response = await apiCaller.post('/users', data);
-  return response.data.data;
-};
-
-export const updateUser = async (
-  objectID: string,
-  updateData: UpdateUserPayload,
-) => {
-  const response = await apiCaller.patch(`/users/${objectID}`, updateData);
-  return response.data.data;
-};
+import type {
+  ICreateUserData,
+  IUpdateUserData,
+} from '../interfaces/services.interface';
+import client from './client';
 
 export const getUser = async (username: string) => {
-  const response = await apiCaller.get('/users', {
-    params: {
-      username,
-      sortBy: 'createdAt',
-      sortDirection: 'asc',
-    },
-  });
-  return response.data.data;
+  try {
+    const response = await client.get('/users', {
+      params: {
+        username,
+        sortBy: 'createdAt',
+        sortDirection: 'asc',
+      },
+    });
+    return response.data;
+  } catch (err: unknown) {
+    const error = err as Error;
+    throw new Error(error.message ?? JSON.stringify(err));
+  }
+};
+
+export const createUser = async (data: ICreateUserData) => {
+  try {
+    const response = await client.post('/users', data);
+    return response.data;
+  } catch (err: unknown) {
+    const error = err as Error;
+    throw new Error(error.message ?? JSON.stringify(err));
+  }
+};
+
+export const updateUser = async (id: string, data: IUpdateUserData) => {
+  try {
+    const response = await client.patch(`/users/${id}`, data);
+    return response.data;
+  } catch (err: unknown) {
+    const error = err as Error;
+    throw new Error(error.message ?? JSON.stringify(err));
+  }
 };

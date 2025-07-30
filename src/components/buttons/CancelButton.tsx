@@ -1,20 +1,20 @@
-import * as React from 'react';
+import type { ReactNode } from 'react';
 
-type CancelButtonProps = {
-  children: React.ReactNode;
+interface ICancelButtonProps {
+  children: ReactNode;
+  onClick: () => void;
   type?: 'button' | 'submit' | 'reset';
   className?: string;
   disabled?: boolean;
-  onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
-};
+}
 
 export default function CancelButton({
   children,
+  onClick,
   type = 'button',
   className = '',
   disabled = false,
-  onClick,
-}: CancelButtonProps) {
+}: ICancelButtonProps) {
   return (
     <button
       type={type}

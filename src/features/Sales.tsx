@@ -1,12 +1,16 @@
-
-import { getSaleHistories, sale } from '../services/salesService';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ChangeEvent } from 'react';
+import FailedAlert from '../components/alerts/FailedAlert';
 import CancelButton from '../components/buttons/CancelButton';
 import ConfirmButton from '../components/buttons/ConfirmButton';
-import FailedAlert from '../components/alerts/FailedAlert';
+import TextField from '../components/inputs/TextField';
 import Modal from '../components/modals/Modal';
 import Table from '../components/Table';
-import TextField from '../components/inputs/TextField';
+import type { IAddModalProps, ISale } from '../interfaces/features.interface';
+import { getSaleHistories, sale } from '../services/salesService';
+import type {
+  ISaleData,
+  ISaleHistoriesResponse,
+} from '../interfaces/services.interface';
 
 const columns = [
   { key: 'productId', label: 'Product ID' },
@@ -14,59 +18,27 @@ const columns = [
   { key: 'totalPrice', label: 'Total Price' },
 ] as const;
 
-type SalesType = {
-  _id: string;
-  productId: string;
-  quantity: number;
-  totalPrice: number;
-};
-
-type ApiSalesType = {
-  _id: string;
-  product: string;
-  quantity: number;
-  totalPrice: number;
-  createdAt: string;
-  createdBy: string;
-  __v: number;
-};
-
-const initialNewSale = { productId: '', quantity: '' };
-
-export default function Sales({
-  isAddModalOpen,
-  closeAddModal,
-}: ModalVisibilityProps) {
-  const [sales, setSales] = useState<SalesType[]>([]);
-  const [newSale, setNewSale] = useState(initialNewSale);
-  const [isConfirmAddOpen, setConfirmAddOpen] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+export default function Sales({ isOpen, close }: IAddModalProps) {
+  const [sales, setSales] = useState<ISale[]>([]);
+  const [newSale, setNewSale] = useState<ISaleData>({
+    productId: '',
+    quantity: 0,
+  });
+  const [isConfirmAddOpen, setConfirmAddOpen] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string>();
 
   const fetchSales = async () => {
     try {
-      const sales: ApiSalesType[] = await getSaleHistories(undefined);
-      const mappedSales = sales.map((item) => ({
-        _id: item._id,
-        quantity: item.quantity,
-        totalPrice: item.totalPrice,
-        productId: item.product,
-      }));
-
-      setSales(mappedSales);
-    } catch {
-      setErrorMessage('failed to fetch products');
+      const sales: ISaleHistoriesResponse[] = await getSaleHistories();
+      setSales(sales);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : 'Get Sale Histories Failed',
+      );
     }
   };
 
-  useEffect(() => {
-    if (!isAddModalOpen) {
-      setErrorMessage('');
-      setNewSale(initialNewSale);
-      fetchSales();
-    }
-  }, [isAddModalOpen]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setNewSale((prev) => ({ ...prev, [name]: value }));
   };
@@ -79,14 +51,12 @@ export default function Sales({
     try {
       const created = await sale({ productId, quantity });
       setSales([...sales, created]);
-      setNewSale({ productId: '', quantity: '' });
-      closeAddModal();
-    } catch (err) {
-      console.error(err);
-      let message = 'failed to create sale';
-      if (err instanceof Error) message = err.message;
-      else if (typeof err === 'string') message = err;
-      setErrorMessage(message);
+      setNewSale({ productId: '', quantity: 0 });
+      close();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : 'Create Sale Failed',
+      );
     }
   };
 
@@ -103,10 +73,18 @@ export default function Sales({
     setConfirmAddOpen(false);
   };
 
+  useEffect(() => {
+    if (!isOpen) {
+      setErrorMessage('');
+      setNewSale(newSale);
+      fetchSales();
+    }
+  }, [isOpen, newSale]);
+
   return (
     <div>
-      {isAddModalOpen && (
-        <Modal title="Add New Sale" onClose={closeAddModal}>
+      {isOpen && (
+        <Modal title="Add New Sale" onClose={close}>
           <div className="grid gap-2 mb-4">
             <label className="text-sm">Product ID</label>
             <TextField
@@ -128,7 +106,7 @@ export default function Sales({
           </div>
 
           <div className="flex justify-end gap-2">
-            <CancelButton onClick={closeAddModal}>Cancel</CancelButton>
+            <CancelButton onClick={close}>Cancel</CancelButton>
             <ConfirmButton onClick={handleAddClick}>Add</ConfirmButton>
           </div>
         </Modal>
@@ -138,7 +116,7 @@ export default function Sales({
         columns={columns}
         rows={sales}
         rowKey="_id"
-        renderActions={() => null}
+        renderActions={() => undefined}
       />
 
       {isConfirmAddOpen && (

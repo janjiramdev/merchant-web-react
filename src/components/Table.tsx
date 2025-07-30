@@ -1,29 +1,27 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 
-type Column<T> = {
+interface Column<T> {
   key: keyof T | 'actions';
   label: string;
-};
+}
 
-type TableProps<T> = {
+interface TableProps<T> {
   columns: readonly Column<T>[];
   rows: T[];
   rowKey: keyof T;
-  renderActions?: (row: T, index: number) => React.ReactNode;
-};
+  renderActions?: (row: T, index: number) => ReactNode;
+}
 
 const IdCell = ({ value }: { value: string }) => {
-  const [showFull, setShowFull] = useState(false);
-  const handleClick = () => setShowFull((prev) => !prev);
-  const displayValue = showFull ? value : value.slice(0, 8) + '...';
+  const [showFullContent, setShowFullContent] = useState<boolean>(false);
 
   return (
     <span
-      onClick={handleClick}
+      onClick={() => setShowFullContent((prev) => !prev)}
       className="cursor-pointer break-all whitespace-normal "
       title={value}
     >
-      {displayValue}
+      {showFullContent ? value.trim() : value.trim().slice(0, 8) + '...'}
     </span>
   );
 };
@@ -53,49 +51,53 @@ export default function Table<T>({
           </tr>
         </thead>
 
-        <tbody className="bg-white divide-y divide-gray-200">
-          {rows.map((row, index) => (
-            <tr
-              key={row[rowKey] ? String(row[rowKey]) : `row-${index}`}
-              className="hover:bg-gray-50"
-            >
-              {columns.map((col) => {
-                if (col.key === 'actions')
+        {rows.length > 0 ? (
+          <tbody className="bg-white divide-y divide-gray-200">
+            {rows.map((row, index) => (
+              <tr
+                key={row[rowKey] ? String(row[rowKey]) : `row-${index}`}
+                className="hover:bg-gray-50"
+              >
+                {columns.map((col) => {
+                  if (col.key === 'actions')
+                    return (
+                      <td
+                        key={'actions'}
+                        className="px-6 py-4 text-center border border-gray-300"
+                      >
+                        {renderActions ? (
+                          renderActions(row, index)
+                        ) : (
+                          <div className="flex justify-center gap-2"></div>
+                        )}
+                      </td>
+                    );
+
+                  const rawValue = row[col.key as keyof T];
+                  let displayValue: ReactNode;
+
+                  if (
+                    (col.key === '_id' || col.key === 'productId') &&
+                    typeof rawValue === 'string'
+                  )
+                    displayValue = <IdCell value={rawValue} />;
+                  else if (
+                    col.key === 'adjustType' &&
+                    typeof rawValue === 'string'
+                  )
+                    displayValue = String(rawValue.toUpperCase() ?? '-');
+                  else displayValue = String(rawValue ?? '-');
+
                   return (
-                    <td
-                      key={'actions'}
-                      className="px-6 py-4 text-center border border-gray-300"
-                    >
-                      {renderActions ? (
-                        renderActions(row, index)
-                      ) : (
-                        <div className="flex justify-center gap-2"></div>
-                      )}
+                    <td key={String(col.key)} className={cellClass}>
+                      {displayValue}
                     </td>
                   );
-
-                const rawValue = row[col.key as keyof T];
-                let displayValue: React.ReactNode;
-
-                if (col.key === 'id' && typeof rawValue === 'string')
-                  displayValue = <IdCell value={rawValue} />;
-                else if (typeof rawValue === 'object' && rawValue !== null)
-                  if ('_id' in rawValue && typeof rawValue._id === 'string')
-                    displayValue = <IdCell value={rawValue._id} />;
-                  else if ('id' in rawValue && typeof rawValue.id === 'string')
-                    displayValue = <IdCell value={rawValue.id} />;
-                  else displayValue = JSON.stringify(rawValue);
-                else displayValue = String(rawValue ?? '-');
-
-                return (
-                  <td key={String(col.key)} className={cellClass}>
-                    {displayValue}
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
+                })}
+              </tr>
+            ))}
+          </tbody>
+        ) : undefined}
       </table>
     </div>
   );

@@ -1,23 +1,33 @@
-import type { AxiosError } from 'axios';
+import axios from 'axios';
 import type {
-  LoginPayload,
-  LoginResponse,
-  LoginResponseWrapper,
+  ILoginServiceData,
+  ILoginServiceResponse,
 } from '../interfaces/services.interface';
-import apiCaller from './apiCaller';
+import client from './client';
 
-export const login = async (formData: LoginPayload): Promise<LoginResponse> => {
+export const login = async (
+  data: ILoginServiceData,
+): Promise<ILoginServiceResponse> => {
   try {
-    const response = await apiCaller.post<LoginResponseWrapper>(
-      '/auth/login',
-      formData,
-      {
-        withCredentials: true,
-      },
+    const response = await client.post('/auth/login', data);
+    return response.data;
+  } catch (err: unknown) {
+    const error = err as Error;
+    throw new Error(error.message ?? JSON.stringify(err));
+  }
+};
+
+export const refreshTokenService = async (
+  input: string,
+): Promise<ILoginServiceResponse> => {
+  try {
+    const response = await axios.get(
+      `${import.meta.env.VITE_SERVICE_ENDPOINT}/auth/refresh-token`,
+      { headers: { Authorization: `Bearer ${input}` } },
     );
     return response.data.data;
-  } catch (error: unknown) {
-    const axiosError = error as AxiosError<{ message: string }>;
-    throw new Error(axiosError.response?.data?.message || 'login failed');
+  } catch (err: unknown) {
+    const error = err as Error;
+    throw new Error(error.message ?? JSON.stringify(err));
   }
 };

@@ -1,18 +1,32 @@
-import type { SalePayload } from '../interfaces/services.interface';
-import apiCaller from './apiCaller';
+import type {
+  ISaleData,
+  ISaleHistoriesResponse,
+} from '../interfaces/services.interface';
+import client from './client';
 
-export const sale = async (data: SalePayload) => {
-  const response = await apiCaller.post('/sales', data);
-  return response.data.data;
+export const getSaleHistories = async () => {
+  try {
+    const response = await client.get('/sales', {
+      params: {
+        sortBy: 'createdAt',
+        sortDirection: 'desc',
+      },
+    });
+    return response.data.map((res: ISaleHistoriesResponse) => {
+      return { ...res, productId: res.product._id };
+    });
+  } catch (err: unknown) {
+    const error = err as Error;
+    throw new Error(error.message ?? JSON.stringify(err));
+  }
 };
 
-export const getSaleHistories = async (productId?: string) => {
-  const params = new URLSearchParams();
-  if (productId) params.append('productId', productId);
-  params.append('sortBy', 'createdAt');
-  params.append('sortDirection', 'desc');
-  const response = await apiCaller.get('/sales', {
-    params,
-  });
-  return response.data.data;
+export const sale = async (data: ISaleData) => {
+  try {
+    const response = await client.post('/sales', data);
+    return response.data;
+  } catch (err: unknown) {
+    const error = err as Error;
+    throw new Error(error.message ?? JSON.stringify(err));
+  }
 };

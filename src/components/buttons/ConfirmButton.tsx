@@ -1,28 +1,28 @@
-import * as React from 'react';
+import type { ReactNode } from 'react';
 
-type ConfirmButtonProps = {
+interface IConfirmButtonProps {
+  children: ReactNode;
   onClick?: () => void;
-  isLoading?: boolean;
-  children: React.ReactNode;
   type?: 'button' | 'submit' | 'reset';
   className?: string;
   disabled?: boolean;
-};
+  isLoading?: boolean;
+}
 
 export default function ConfirmButton({
-  onClick,
-  isLoading,
   children,
+  onClick,
   type = 'button',
   className = '',
   disabled = false,
-}: ConfirmButtonProps) {
+  isLoading = false,
+}: IConfirmButtonProps) {
   return (
     <button
       onClick={onClick}
       type={type}
       className={`w-full rounded-lg px-5 py-2 text-white transition bg-blue-500 hover:bg-blue-700 disabled:opacity-60  ${className}`}
-      disabled={isLoading || disabled}
+      disabled={isLoading ?? disabled}
     >
       {isLoading ? (
         <div className="flex items-center justify-center gap-2">

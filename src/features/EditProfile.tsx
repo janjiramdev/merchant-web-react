@@ -1,101 +1,95 @@
-
 import { useEffect, useState } from 'react';
-import { updateUser } from '../services/usersService';
+import FailedAlert from '../components/alerts/FailedAlert';
 import CancelButton from '../components/buttons/CancelButton';
 import ConfirmButton from '../components/buttons/ConfirmButton';
-import EditProfileModal from '../components/modals/EditProfile';
-import FailedAlert from '../components/alerts/FailedAlert';
+import EditProfileModal from '../components/modals/EditProfileModal';
 import Modal from '../components/modals/Modal';
+import type { IUser } from '../interfaces/features.interface';
+import type { IUpdateUserData } from '../interfaces/services.interface';
+import { updateUser } from '../services/usersService';
 
+interface IEditProfileFeatureProps {
+  data: IUser;
+  isOpen: boolean;
+  onClose: () => void;
+}
 
-export default function EditProfileFeature({ user, isOpen, onClose }: Props) {
-  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-  const [id, setId] = useState('');
-  const [password, setPassword] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [gender, setGender] = useState('');
-  const [age, setAge] = useState<number | ''>('');
+export default function EditProfileFeature({
+  data,
+  isOpen,
+  onClose,
+}: IEditProfileFeatureProps) {
+  const [isConfirmOpen, setIsConfirmOpen] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string>();
+  const [formData, setFormData] = useState<IUpdateUserData>({
+    password: '',
+    firstName: '',
+    lastName: '',
+    gender: undefined,
+    age: 0,
+  });
+
+  const handleConfirmSave = async () => {
+    setIsConfirmOpen(false);
+
+    try {
+      const profileUpdate: Partial<IUpdateUserData> = {};
+      const trimmed = {
+        password: formData?.password?.trim(),
+        firstName: formData?.firstName?.trim(),
+        lastName: formData?.lastName?.trim(),
+        gender: formData.gender,
+        age: formData.age,
+      };
+
+      if (trimmed.password) profileUpdate.password = trimmed.password;
+      if (trimmed.firstName) profileUpdate.firstName = trimmed.firstName;
+      if (trimmed.lastName) profileUpdate.lastName = trimmed.lastName;
+      if (
+        trimmed.gender &&
+        ['male', 'female', 'others'].includes(trimmed.gender)
+      )
+        profileUpdate.gender = trimmed.gender;
+      if (trimmed.age) profileUpdate.age = trimmed.age;
+
+      await updateUser(data._id, profileUpdate);
+      onClose();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : 'Update profile failed',
+      );
+    }
+  };
 
   useEffect(() => {
     if (isOpen) {
-      setId(user._id);
-      setPassword('');
-      setFirstName(user.firstName);
-      setLastName(user.lastName);
-      setGender(user.gender);
-      setAge(user.age);
+      setFormData({
+        password: '',
+        firstName: data.firstName,
+        lastName: data.lastName,
+        gender: data.gender,
+        age: data.age,
+      });
     }
-  }, [user, isOpen]);
-
-  const closeModal = () => {
-    if (onClose) onClose();
-  };
-
-  const openConfirm = () => setIsConfirmOpen(true);
-  const closeConfirm = () => {
-    setIsConfirmOpen(false);
-  };
-
-  const handleConfirmSave = async () => {
-    closeConfirm();
-
-    try {
-      const objectId = id;
-
-      const profileUpdate: Partial<{
-        password: string;
-        firstName: string;
-        lastName: string;
-        gender: string;
-        age: number;
-      }> = {};
-
-      if (password.trim() !== '') profileUpdate.password = password;
-      if (firstName.trim() !== '') profileUpdate.firstName = firstName.trim();
-      if (lastName.trim() !== '') profileUpdate.lastName = lastName.trim();
-      if (
-        gender.trim() !== '' &&
-        ['male', 'female', 'others'].includes(gender.trim().toLowerCase())
-      )
-        profileUpdate.gender = gender.trim().toLowerCase();
-      if (age !== '' && !isNaN(Number(age))) profileUpdate.age = Number(age);
-
-      await updateUser(objectId, profileUpdate);
-      closeModal();
-    } catch (err) {
-      console.error(err);
-      setErrorMessage('failed to update profile');
-    }
-  };
-  const onSaveClicked = () => {
-    openConfirm();
-  };
+  }, [data, isOpen]);
 
   return (
     <>
       <EditProfileModal
         isOpen={isOpen}
-        onClose={closeModal}
-        password={password}
-        firstName={firstName}
-        lastName={lastName}
-        gender={gender}
-        age={age}
-        onChangePassword={setPassword}
-        onChangeFirstName={setFirstName}
-        onChangeLastName={setLastName}
-        onChangeGender={setGender}
-        onChangeAge={setAge}
-        onSave={onSaveClicked}
+        data={formData}
+        onChange={setFormData}
+        onSave={() => setIsConfirmOpen(true)}
+        onClose={onClose}
       />
 
       {isConfirmOpen && (
-        <Modal title="Confirm Save" onClose={closeConfirm}>
+        <Modal title="Confirm Save" onClose={() => setIsConfirmOpen(false)}>
           <p>Are you sure you want to save the changes?</p>
           <div className="flex justify-end gap-2 mt-4">
-            <CancelButton onClick={closeConfirm}>Cancel</CancelButton>
+            <CancelButton onClick={() => setIsConfirmOpen(false)}>
+              Cancel
+            </CancelButton>
             <ConfirmButton onClick={handleConfirmSave}>Confirm</ConfirmButton>
           </div>
         </Modal>

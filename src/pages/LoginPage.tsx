@@ -1,28 +1,28 @@
+import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { login } from '../services/authService';
-import { useAuth } from '../context/AuthContext';
-import { useState } from 'react';
 import ConfirmButton from '../components/buttons/ConfirmButton';
 import PasswordToggleButton from '../components/buttons/PasswordToggleButton';
 import TextField from '../components/inputs/TextField';
+import { useSession } from '../contexts/sessions/SessionContext';
+import type { ILoginServiceData } from '../interfaces/services.interface';
+import { login } from '../services/authService';
 
-export default function Login() {
-  const { setTokens } = useAuth();
-  const [formData, setFormData] = useState<LoginFormData>({
+export default function LoginPage() {
+  const navigate = useNavigate();
+  const { setTokens } = useSession();
+
+  const [formData, setFormData] = useState<ILoginServiceData>({
     username: '',
     password: '',
   });
+  const [errorMessage, setErrorMessage] = useState<string>();
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [showPassword, setShowPassword] = useState<boolean>(false);
 
-  const [message, setMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-
-  const navigate = useNavigate();
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
-    setMessage('');
+    setErrorMessage(undefined);
 
     try {
       const res = await login({
@@ -31,8 +31,8 @@ export default function Login() {
       });
       setTokens(res);
       navigate('/home');
-    } catch {
-      setMessage('incorrect username or password');
+    } catch (error: unknown) {
+      setErrorMessage(error instanceof Error ? error.message : 'Login Failed');
     } finally {
       setIsLoading(false);
     }
@@ -75,17 +75,17 @@ export default function Login() {
               />
 
               <PasswordToggleButton
-                show={showPassword}
-                toggle={() => setShowPassword(!showPassword)}
+                isShow={showPassword}
+                onClick={() => setShowPassword(!showPassword)}
               />
             </div>
           </div>
 
-          {message && (
+          {errorMessage && (
             <div
-              className={`text-sm text-center ${message === 'login success' ? 'text-green-600' : 'text-red-600'}`}
+              className={`text-sm text-center ${errorMessage === 'login success' ? 'text-green-600' : 'text-red-600'}`}
             >
-              {message}
+              {errorMessage}
             </div>
           )}
 

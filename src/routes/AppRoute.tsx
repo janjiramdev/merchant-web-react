@@ -1,27 +1,28 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
-import ExternalRoute from './ExternalRoute';
-import HomePage from '../pages/HomePage';
-import Login from '../pages/Login';
 import MainLayout from '../layouts/MainLayout';
+import HomePage from '../pages/HomePage';
+import Login from '../pages/LoginPage';
 import NotFoundPage from '../pages/NotFoundPage';
-import ProtectedRoute from './ProtectedRoute';
-import Register from '../pages/Register';
+import RegisterPage from '../pages/RegisterPage';
+import ExternalRoute from './ExternalRoute';
+import InternalRoute from './InternalRoute';
 
-export default function AppRoutes() {
+export default function AppRoute() {
   return (
     <Routes>
       <Route element={<ExternalRoute />}>
         <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route path="/register" element={<RegisterPage />} />
       </Route>
 
-      <Route element={<ProtectedRoute />}>
+      <Route element={<InternalRoute />}>
         <Route element={<MainLayout />}>
           <Route path="/" element={<Navigate to="/home" replace />} />
           <Route path="/home" element={<HomePage />} />
-          <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Route>
+
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }

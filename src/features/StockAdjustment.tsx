@@ -1,14 +1,22 @@
+import { useEffect, useState, type ChangeEvent } from 'react';
+import FailedAlert from '../components/alerts/FailedAlert';
+import CancelButton from '../components/buttons/CancelButton';
+import ConfirmButton from '../components/buttons/ConfirmButton';
+import TextField from '../components/inputs/TextField';
+import Modal from '../components/modals/Modal';
+import Table from '../components/Table';
+import type {
+  IAddModalProps,
+  IAdjustStock,
+} from '../interfaces/features.interface';
 import {
   adjustStock,
   getStockAdjustHistories,
 } from '../services/stockAdjustmentService';
-import { useEffect, useState } from 'react';
-import CancelButton from '../components/buttons/CancelButton';
-import ConfirmButton from '../components/buttons/ConfirmButton';
-import FailedAlert from '../components/alerts/FailedAlert';
-import Modal from '../components/modals/Modal';
-import Table from '../components/Table';
-import TextField from '../components/inputs/TextField';
+import type {
+  IAdjustStockData,
+  IStockAdjustHistoriesResponse,
+} from '../interfaces/services.interface';
 
 const columns = [
   { key: 'productId', label: 'Product ID' },
@@ -16,64 +24,32 @@ const columns = [
   { key: 'quantity', label: 'Quantity' },
 ] as const;
 
-type StockAdjustmentType = {
-  _id: string;
-  productId: string;
-  adjustType: 'add' | 'remove';
-  quantity: number;
-};
-
-type ApiStockType = {
-  _id: string;
-  product: string;
-  adjustType: 'add' | 'remove';
-  quantity: number;
-  createdAt: string;
-  createdBy: string;
-  __v: number;
-};
-
-const initialNewStockAdjustment = {
-  productId: '',
-  adjustType: 'add' as 'add' | 'remove' | '',
-  quantity: 0,
-};
-
-export default function StockAdjustment({
-  isAddModalOpen,
-  closeAddModal,
-}: ModalVisibilityProps) {
-  const [stockAdjustment, setStockAdjustment] = useState<StockAdjustmentType[]>(
-    [],
-  );
-  const [newStock, setNewStock] = useState(initialNewStockAdjustment);
-  const [isConfirmAddOpen, setConfirmAddOpen] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+export default function StockAdjustment({ isOpen, close }: IAddModalProps) {
+  const [stockAdjustment, setStockAdjustment] = useState<IAdjustStock[]>([]);
+  const [newStock, setNewStock] = useState<IAdjustStockData>({
+    productId: '',
+    adjustType: 'add',
+    quantity: 0,
+  });
+  const [isConfirmAddOpen, setConfirmAddOpen] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string>();
 
   const fetchStocks = async () => {
     try {
-      const stocks: ApiStockType[] = await getStockAdjustHistories(undefined);
-      const mappedStocks = stocks.map((item) => ({
-        ...item,
-        productId: item.product,
-      }));
-
-      setStockAdjustment(mappedStocks);
-    } catch {
-      setErrorMessage('failed to fetch products');
+      const stocks: IStockAdjustHistoriesResponse[] =
+        await getStockAdjustHistories();
+      setStockAdjustment(stocks);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : 'Get Aujust Stock Histories Failed',
+      );
     }
   };
 
-  useEffect(() => {
-    if (!isAddModalOpen) {
-      setErrorMessage('');
-      setNewStock(initialNewStockAdjustment);
-      fetchStocks();
-    }
-  }, [isAddModalOpen]);
-
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
     setNewStock((prev) => ({
@@ -95,21 +71,21 @@ export default function StockAdjustment({
       setErrorMessage('invalid input');
       return;
     }
+
     if (quantity <= 0) {
       setErrorMessage('quantity must be greater than 0');
       return;
     }
+
     try {
       await adjustStock({ productId, adjustType, quantity });
       await fetchStocks();
-      setNewStock(initialNewStockAdjustment);
-      closeAddModal();
-    } catch (err) {
-      console.error(err);
-      let message = 'failed to create adjust stock';
-      if (err instanceof Error) message = err.message;
-      else if (typeof err === 'string') message = err;
-      setErrorMessage(message);
+      setNewStock(newStock);
+      close();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : 'Create Adjust Stock Failed',
+      );
     }
   };
 
@@ -126,10 +102,18 @@ export default function StockAdjustment({
     setConfirmAddOpen(false);
   };
 
+  useEffect(() => {
+    if (!isOpen) {
+      setErrorMessage('');
+      setNewStock(newStock);
+      fetchStocks();
+    }
+  }, [isOpen, newStock]);
+
   return (
     <div>
-      {isAddModalOpen && (
-        <Modal title="Add New Stock" onClose={closeAddModal}>
+      {isOpen && (
+        <Modal title="Add New Stock" onClose={close}>
           <div className="grid gap-2 mb-4">
             <label className="text-sm">Product ID</label>
             <TextField
@@ -163,7 +147,7 @@ export default function StockAdjustment({
           </div>
 
           <div className="flex justify-end gap-2">
-            <CancelButton onClick={closeAddModal}>Cancel</CancelButton>
+            <CancelButton onClick={close}>Cancel</CancelButton>
             <ConfirmButton onClick={handleAddClick}>Add</ConfirmButton>
           </div>
         </Modal>
@@ -173,7 +157,7 @@ export default function StockAdjustment({
         columns={columns}
         rows={stockAdjustment}
         rowKey="_id"
-        renderActions={() => null}
+        renderActions={() => undefined}
       />
 
       {isConfirmAddOpen && (
