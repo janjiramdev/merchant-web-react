@@ -14,16 +14,16 @@ export default function HomePage() {
 
   const openAddModal = () => {
     if (tableView === 'Product') setIsProductModalOpen(true);
+    else if (tableView === 'Sales') setIsSalesModalOpen(true);
     else if (tableView === 'StockAdjustment')
       setIsStockAdjustmentModalOpen(true);
-    else if (tableView === 'Sales') setIsSalesModalOpen(true);
   };
 
   const closeAddModal = () => {
     if (tableView === 'Product') setIsProductModalOpen(false);
+    else if (tableView === 'Sales') setIsSalesModalOpen(false);
     else if (tableView === 'StockAdjustment')
       setIsStockAdjustmentModalOpen(false);
-    else if (tableView === 'Sales') setIsSalesModalOpen(false);
   };
 
   return (
@@ -46,18 +46,18 @@ export default function HomePage() {
       </div>
 
       {tableView === 'Product' && (
-        <Product isOpen={isProductModalOpen} close={closeAddModal} />
+        <Product isOpen={isProductModalOpen} onClose={closeAddModal} />
       )}
 
       {tableView === 'StockAdjustment' && (
         <StockAdjustment
           isOpen={isStockAdjustmentModalOpen}
-          close={closeAddModal}
+          onClose={closeAddModal}
         />
       )}
 
       {tableView === 'Sales' && (
-        <Sales isOpen={isSalesModalOpen} close={closeAddModal} />
+        <Sales isOpen={isSalesModalOpen} onClose={closeAddModal} />
       )}
     </div>
   );

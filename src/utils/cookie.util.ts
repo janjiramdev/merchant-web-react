@@ -1,4 +1,5 @@
 import Cookies from 'js-cookie';
+import mainConfig from '../configs/main.config';
 
 const formatExpiredTime = (str: string): Date => {
   const now = new Date();
@@ -40,7 +41,7 @@ export const getRefreshToken = (): string | undefined => {
 export const setAccessToken = (input: string) => {
   Cookies.set('accessToken', input, {
     expires: formatExpiredTime(
-      import.meta.env.VITE_COOKIE_ACCESS_TOKEN_EXPIRE_TIME ?? '1h',
+      mainConfig.cookies.accessTokenExpireTime ?? '1h',
     ),
   });
 };
@@ -48,7 +49,7 @@ export const setAccessToken = (input: string) => {
 export const setRefreshToken = (input: string) => {
   Cookies.set('refreshToken', input, {
     expires: formatExpiredTime(
-      import.meta.env.VITE_COOKIE_REFRESH_TOKEN_EXPIRE_TIME ?? '7d',
+      mainConfig.cookies.refreshTokenExpireTime ?? '7d',
     ),
   });
 };

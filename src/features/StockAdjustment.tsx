@@ -7,16 +7,16 @@ import Modal from '../components/modals/Modal';
 import Table from '../components/Table';
 import type {
   IAddModalProps,
-  IAdjustStock,
+  IStockAdjust,
 } from '../interfaces/features.interface';
+import type {
+  IAdjustStockRequestBody,
+  IStockAdjustHistoriesResponseData,
+} from '../interfaces/services.interface';
 import {
   adjustStock,
   getStockAdjustHistories,
-} from '../services/stockAdjustmentService';
-import type {
-  IAdjustStockData,
-  IStockAdjustHistoriesResponse,
-} from '../interfaces/services.interface';
+} from '../services/stock-adjustment.service';
 
 const columns = [
   { key: 'productId', label: 'Product ID' },
@@ -24,9 +24,9 @@ const columns = [
   { key: 'quantity', label: 'Quantity' },
 ] as const;
 
-export default function StockAdjustment({ isOpen, close }: IAddModalProps) {
-  const [stockAdjustment, setStockAdjustment] = useState<IAdjustStock[]>([]);
-  const [newStock, setNewStock] = useState<IAdjustStockData>({
+export default function StockAdjustment({ isOpen, onClose }: IAddModalProps) {
+  const [stockAdjustment, setStockAdjustment] = useState<IStockAdjust[]>([]);
+  const [newStock, setNewStock] = useState<IAdjustStockRequestBody>({
     productId: '',
     adjustType: 'add',
     quantity: 0,
@@ -36,9 +36,9 @@ export default function StockAdjustment({ isOpen, close }: IAddModalProps) {
 
   const fetchStocks = async () => {
     try {
-      const stocks: IStockAdjustHistoriesResponse[] =
+      const response: IStockAdjustHistoriesResponseData[] =
         await getStockAdjustHistories();
-      setStockAdjustment(stocks);
+      setStockAdjustment(response);
     } catch (error) {
       setErrorMessage(
         error instanceof Error
@@ -81,7 +81,7 @@ export default function StockAdjustment({ isOpen, close }: IAddModalProps) {
       await adjustStock({ productId, adjustType, quantity });
       await fetchStocks();
       setNewStock(newStock);
-      close();
+      onClose();
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : 'Create Adjust Stock Failed',
@@ -113,7 +113,7 @@ export default function StockAdjustment({ isOpen, close }: IAddModalProps) {
   return (
     <div>
       {isOpen && (
-        <Modal title="Add New Stock" onClose={close}>
+        <Modal title="Add New Stock" onClose={onClose}>
           <div className="grid gap-2 mb-4">
             <label className="text-sm">Product ID</label>
             <TextField
@@ -147,7 +147,7 @@ export default function StockAdjustment({ isOpen, close }: IAddModalProps) {
           </div>
 
           <div className="flex justify-end gap-2">
-            <CancelButton onClick={close}>Cancel</CancelButton>
+            <CancelButton onClick={onClose}>Cancel</CancelButton>
             <ConfirmButton onClick={handleAddClick}>Add</ConfirmButton>
           </div>
         </Modal>

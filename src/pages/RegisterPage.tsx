@@ -6,13 +6,13 @@ import ConfirmButton from '../components/buttons/ConfirmButton';
 import PasswordToggleButton from '../components/buttons/PasswordToggleButton';
 import SelectField from '../components/inputs/SelectField';
 import TextField from '../components/inputs/TextField';
-import type { ICreateUserData } from '../interfaces/services.interface';
-import { createUser } from '../services/usersService';
+import type { ICreateUserRequestBody } from '../interfaces/services.interface';
+import { createUser } from '../services/users.service';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
 
-  const [formData, setFormData] = useState<ICreateUserData>({
+  const [formData, setFormData] = useState<ICreateUserRequestBody>({
     username: '',
     password: '',
     firstName: '',

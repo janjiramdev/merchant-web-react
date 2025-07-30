@@ -5,8 +5,8 @@ import ConfirmButton from '../components/buttons/ConfirmButton';
 import EditProfileModal from '../components/modals/EditProfileModal';
 import Modal from '../components/modals/Modal';
 import type { IUser } from '../interfaces/features.interface';
-import type { IUpdateUserData } from '../interfaces/services.interface';
-import { updateUser } from '../services/usersService';
+import type { IUpdateUserRequestBody } from '../interfaces/services.interface';
+import { updateUser } from '../services/users.service';
 
 interface IEditProfileFeatureProps {
   data: IUser;
@@ -19,40 +19,62 @@ export default function EditProfileFeature({
   isOpen,
   onClose,
 }: IEditProfileFeatureProps) {
-  const [isConfirmOpen, setIsConfirmOpen] = useState<boolean>(false);
-  const [errorMessage, setErrorMessage] = useState<string>();
-  const [formData, setFormData] = useState<IUpdateUserData>({
+  const [isOpenConfirmModal, setIsOpenConfirmModal] = useState<boolean>(false);
+  const [currentFormData, setCurrentFormData] =
+    useState<IUpdateUserRequestBody>({
+      password: '',
+      firstName: '',
+      lastName: '',
+      gender: undefined,
+      age: 0,
+    });
+  const [formData, setFormData] = useState<IUpdateUserRequestBody>({
     password: '',
     firstName: '',
     lastName: '',
     gender: undefined,
     age: 0,
   });
+  const [errorMessage, setErrorMessage] = useState<string>();
 
-  const handleConfirmSave = async () => {
-    setIsConfirmOpen(false);
+  const handleSubmit = async () => {
+    setIsOpenConfirmModal(false);
 
     try {
-      const profileUpdate: Partial<IUpdateUserData> = {};
-      const trimmed = {
+      const prepareData: IUpdateUserRequestBody = {
         password: formData?.password?.trim(),
         firstName: formData?.firstName?.trim(),
         lastName: formData?.lastName?.trim(),
-        gender: formData.gender,
-        age: formData.age,
+        gender: formData?.gender,
+        age: formData?.age,
       };
 
-      if (trimmed.password) profileUpdate.password = trimmed.password;
-      if (trimmed.firstName) profileUpdate.firstName = trimmed.firstName;
-      if (trimmed.lastName) profileUpdate.lastName = trimmed.lastName;
+      const updateProfileBody: Partial<IUpdateUserRequestBody> = {};
       if (
-        trimmed.gender &&
-        ['male', 'female', 'others'].includes(trimmed.gender)
+        prepareData.password !== '' &&
+        prepareData.password !== currentFormData.password
       )
-        profileUpdate.gender = trimmed.gender;
-      if (trimmed.age) profileUpdate.age = trimmed.age;
+        updateProfileBody.password = prepareData.password;
+      if (
+        prepareData.firstName !== '' &&
+        prepareData.firstName !== currentFormData.firstName
+      )
+        updateProfileBody.firstName = prepareData.firstName;
+      if (
+        prepareData.lastName !== '' &&
+        prepareData.lastName !== currentFormData.lastName
+      )
+        updateProfileBody.lastName = prepareData.lastName;
+      if (
+        prepareData.gender &&
+        ['male', 'female', 'others'].includes(prepareData.gender) &&
+        prepareData.gender !== currentFormData.gender
+      )
+        updateProfileBody.gender = prepareData.gender;
+      if (prepareData.age && prepareData.age !== currentFormData.age)
+        updateProfileBody.age = prepareData.age;
 
-      await updateUser(data._id, profileUpdate);
+      await updateUser(data._id, updateProfileBody);
       onClose();
     } catch (error) {
       setErrorMessage(
@@ -63,6 +85,13 @@ export default function EditProfileFeature({
 
   useEffect(() => {
     if (isOpen) {
+      setCurrentFormData({
+        password: '',
+        firstName: data.firstName,
+        lastName: data.lastName,
+        gender: data.gender,
+        age: data.age,
+      });
       setFormData({
         password: '',
         firstName: data.firstName,
@@ -79,18 +108,21 @@ export default function EditProfileFeature({
         isOpen={isOpen}
         data={formData}
         onChange={setFormData}
-        onSave={() => setIsConfirmOpen(true)}
+        onSubmit={() => setIsOpenConfirmModal(true)}
         onClose={onClose}
       />
 
-      {isConfirmOpen && (
-        <Modal title="Confirm Save" onClose={() => setIsConfirmOpen(false)}>
+      {isOpenConfirmModal && (
+        <Modal
+          title="Confirm Save"
+          onClose={() => setIsOpenConfirmModal(false)}
+        >
           <p>Are you sure you want to save the changes?</p>
           <div className="flex justify-end gap-2 mt-4">
-            <CancelButton onClick={() => setIsConfirmOpen(false)}>
+            <CancelButton onClick={() => setIsOpenConfirmModal(false)}>
               Cancel
             </CancelButton>
-            <ConfirmButton onClick={handleConfirmSave}>Confirm</ConfirmButton>
+            <ConfirmButton onClick={handleSubmit}>Confirm</ConfirmButton>
           </div>
         </Modal>
       )}

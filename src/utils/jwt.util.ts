@@ -1,10 +1,10 @@
 import { jwtDecode } from 'jwt-decode';
 
 interface IJwtPayload {
-  exp: number;
+  sub: string;
   username: string;
   iat: number;
-  sub: string;
+  exp: number;
 }
 
 export const decodeJwt = (input: string): IJwtPayload | undefined => {

@@ -10,16 +10,17 @@ import {
   setRefreshToken,
   removeAccessToken,
   removeRefreshToken,
-} from '../utils/cookie';
-import { decodeJwt } from '../utils/jwt';
-import { refreshTokenService } from './authService';
+} from '../utils/cookie.util';
+import { decodeJwt } from '../utils/jwt.util';
+import { refreshToken as refreshTokenService } from './auth.service';
+import mainConfig from '../configs/main.config';
 
-interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
+interface CustomAxiosRequest extends InternalAxiosRequestConfig {
   retry?: boolean;
 }
 
 const client = axios.create({
-  baseURL: import.meta.env.VITE_SERVICE_ENDPOINT,
+  baseURL: mainConfig.services.endpoint,
   timeout: 60000,
   withCredentials: true,
 });
@@ -31,12 +32,12 @@ client.interceptors.request.use(
     if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`;
     return config;
   },
-  (error: AxiosError) => Promise.reject(error),
+  (error: AxiosError) => Promise.reject(error.response?.data ?? error),
 );
 
 client.interceptors.response.use(
   (response: AxiosResponse) => response.data,
-  async (error: AxiosError & { config?: CustomAxiosRequestConfig }) => {
+  async (error: AxiosError & { config?: CustomAxiosRequest }) => {
     const originalRequest = error.config;
 
     if (
@@ -45,25 +46,30 @@ client.interceptors.response.use(
       !originalRequest.retry
     ) {
       const refreshToken = getRefreshToken();
-      const refreshDecoded = refreshToken ? decodeJwt(refreshToken) : undefined;
+      const decodedRefreshToken = refreshToken
+        ? decodeJwt(refreshToken)
+        : undefined;
       const isRefreshTokenValid =
-        refreshDecoded?.exp && refreshDecoded.exp * 1000 > Date.now();
+        decodedRefreshToken?.exp && decodedRefreshToken.exp * 1000 > Date.now();
 
-      if (isRefreshTokenValid && refreshToken) {
+      if (refreshToken && isRefreshTokenValid) {
         try {
           const response = await refreshTokenService(refreshToken);
-          const { accessToken, refreshToken: newRefreshToken } = response;
+          const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
+            response;
 
-          setAccessToken(accessToken);
+          setAccessToken(newAccessToken);
           setRefreshToken(newRefreshToken);
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
 
-          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
           return client(originalRequest);
         } catch (err) {
           removeAccessToken();
           removeRefreshToken();
           window.location.href = '/login';
 
+          if (err instanceof AxiosError)
+            return Promise.reject(error.response?.data ?? error);
           return Promise.reject(
             err instanceof Error ? err.message : JSON.stringify(err),
           );

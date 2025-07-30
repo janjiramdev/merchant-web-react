@@ -1,4 +1,4 @@
-import type { IUpdateUserData } from '../../interfaces/services.interface';
+import type { IUpdateUserRequestBody } from '../../interfaces/services.interface';
 import CancelButton from '../buttons/CancelButton';
 import ConfirmButton from '../buttons/ConfirmButton';
 import SelectField from '../inputs/SelectField';
@@ -7,9 +7,9 @@ import Modal from './Modal';
 
 interface IEditProfileModalProps {
   isOpen: boolean;
-  data: IUpdateUserData;
-  onChange: (value: IUpdateUserData) => void;
-  onSave: () => void;
+  data: IUpdateUserRequestBody;
+  onChange: (value: IUpdateUserRequestBody) => void;
+  onSubmit: () => void;
   onClose: () => void;
 }
 
@@ -17,7 +17,7 @@ export default function EditProfileModal({
   isOpen,
   data,
   onChange,
-  onSave,
+  onSubmit,
   onClose,
 }: IEditProfileModalProps) {
   return (
@@ -69,7 +69,7 @@ export default function EditProfileModal({
 
           <div className="flex justify-end gap-2">
             <CancelButton onClick={onClose}>Cancel</CancelButton>
-            <ConfirmButton onClick={onSave}>Save</ConfirmButton>
+            <ConfirmButton onClick={onSubmit}>Save</ConfirmButton>
           </div>
         </Modal>
       ) : undefined}

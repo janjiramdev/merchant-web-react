@@ -6,11 +6,11 @@ import TextField from '../components/inputs/TextField';
 import Modal from '../components/modals/Modal';
 import Table from '../components/Table';
 import type { IAddModalProps, ISale } from '../interfaces/features.interface';
-import { getSaleHistories, sale } from '../services/salesService';
 import type {
-  ISaleData,
-  ISaleHistoriesResponse,
+  ISaleHistoriesResponseData,
+  ISaleRequestBody,
 } from '../interfaces/services.interface';
+import { getSaleHistories, sale } from '../services/sales.service';
 
 const columns = [
   { key: 'productId', label: 'Product ID' },
@@ -18,9 +18,9 @@ const columns = [
   { key: 'totalPrice', label: 'Total Price' },
 ] as const;
 
-export default function Sales({ isOpen, close }: IAddModalProps) {
+export default function Sales({ isOpen, onClose }: IAddModalProps) {
   const [sales, setSales] = useState<ISale[]>([]);
-  const [newSale, setNewSale] = useState<ISaleData>({
+  const [newSale, setNewSale] = useState<ISaleRequestBody>({
     productId: '',
     quantity: 0,
   });
@@ -29,8 +29,8 @@ export default function Sales({ isOpen, close }: IAddModalProps) {
 
   const fetchSales = async () => {
     try {
-      const sales: ISaleHistoriesResponse[] = await getSaleHistories();
-      setSales(sales);
+      const response: ISaleHistoriesResponseData[] = await getSaleHistories();
+      setSales(response);
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : 'Get Sale Histories Failed',
@@ -52,7 +52,7 @@ export default function Sales({ isOpen, close }: IAddModalProps) {
       const created = await sale({ productId, quantity });
       setSales([...sales, created]);
       setNewSale({ productId: '', quantity: 0 });
-      close();
+      onClose();
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : 'Create Sale Failed',
@@ -84,7 +84,7 @@ export default function Sales({ isOpen, close }: IAddModalProps) {
   return (
     <div>
       {isOpen && (
-        <Modal title="Add New Sale" onClose={close}>
+        <Modal title="Add New Sale" onClose={onClose}>
           <div className="grid gap-2 mb-4">
             <label className="text-sm">Product ID</label>
             <TextField
@@ -106,7 +106,7 @@ export default function Sales({ isOpen, close }: IAddModalProps) {
           </div>
 
           <div className="flex justify-end gap-2">
-            <CancelButton onClick={close}>Cancel</CancelButton>
+            <CancelButton onClick={onClose}>Cancel</CancelButton>
             <ConfirmButton onClick={handleAddClick}>Add</ConfirmButton>
           </div>
         </Modal>

@@ -8,13 +8,14 @@ import GetProfileFeature from './GetProfile';
 
 export default function NavBar() {
   const navigate = useNavigate();
+
   const { sessionUser, removeTokens } = useSession();
 
-  const [showLogoutModal, setShowLogoutModal] = useState<boolean>(false);
+  const [openLogoutModal, setOpenLogoutModal] = useState<boolean>(false);
 
   const handleLogout = () => {
+    setOpenLogoutModal(false);
     removeTokens();
-    setShowLogoutModal(false);
     navigate('/login');
   };
 
@@ -26,7 +27,7 @@ export default function NavBar() {
         <div className="flex items-center gap-4">
           <GetProfileFeature username={sessionUser?.username ?? 'Guest'} />
           <button
-            onClick={() => setShowLogoutModal(true)}
+            onClick={() => setOpenLogoutModal(true)}
             className="rounded-lg bg-gray-500 px-4 py-2 text-sm font-semibold hover:bg-red-600 transition-colors"
           >
             Logout
@@ -34,11 +35,11 @@ export default function NavBar() {
         </div>
       </header>
 
-      {showLogoutModal && (
-        <Modal title="Confirm Logout" onClose={() => setShowLogoutModal(false)}>
+      {openLogoutModal && (
+        <Modal title="Confirm Logout" onClose={() => setOpenLogoutModal(false)}>
           <p>Are you sure you want to logout?</p>
           <div className="flex justify-end gap-2 mt-4">
-            <CancelButton onClick={() => setShowLogoutModal(false)}>
+            <CancelButton onClick={() => setOpenLogoutModal(false)}>
               Cancel
             </CancelButton>
             <ConfirmButton onClick={handleLogout}>Confirm</ConfirmButton>

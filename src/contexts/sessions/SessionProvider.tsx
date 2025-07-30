@@ -5,7 +5,7 @@ import type {
   ISessionTokens,
   ISessionUser,
 } from '../../interfaces/contexts.interface';
-import { refreshTokenService } from '../../services/authService';
+import { refreshToken as refreshTokenService } from '../../services/auth.service';
 import {
   getAccessToken,
   getRefreshToken,
@@ -13,13 +13,15 @@ import {
   setRefreshToken,
   removeAccessToken,
   removeRefreshToken,
-} from '../../utils/cookie';
-import { decodeJwt } from '../../utils/jwt';
+} from '../../utils/cookie.util';
+import { decodeJwt } from '../../utils/jwt.util';
 import { SessionContext } from './SessionContext';
 
 export default function SessionProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
+
   const location = useLocation();
+
   const hasNavigatedToLoginRef = useRef(false);
 
   const [sessionAccessToken, setSessionAccessToken] = useState<
@@ -82,27 +84,25 @@ export default function SessionProvider({ children }: { children: ReactNode }) {
       ? decodeJwt(sessionRefreshToken)
       : undefined;
 
-    const now = Date.now();
     const isAccessTokenValid =
-      accessDecoded?.exp && accessDecoded.exp * 1000 > now;
+      accessDecoded?.exp && accessDecoded.exp * 1000 > Date.now();
     const isRefreshTokenValid =
-      refreshDecoded?.exp && refreshDecoded.exp * 1000 > now;
+      refreshDecoded?.exp && refreshDecoded.exp * 1000 > Date.now();
 
-    if (accessDecoded && isAccessTokenValid) {
+    if (accessDecoded && isAccessTokenValid)
       setSessionUser({
         id: accessDecoded.sub,
         username: accessDecoded.username,
       });
-    } else if (
+    else if (
       !isAccessTokenValid &&
       sessionRefreshToken &&
       refreshDecoded &&
       isRefreshTokenValid
-    ) {
+    )
       refreshTokens(sessionRefreshToken);
-    } else {
+    else {
       removeTokens();
-
       if (
         location.pathname !== '/register' &&
         !hasNavigatedToLoginRef.current

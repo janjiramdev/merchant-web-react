@@ -1,3 +1,5 @@
+import type { IProductResponseData } from './services.interface';
+
 export interface IUser {
   _id: string;
   username: string;
@@ -16,9 +18,10 @@ export interface IProduct {
   totalSales: number;
 }
 
-export interface IAdjustStock {
+export interface IStockAdjust {
   _id: string;
   productId: string;
+  product: IProductResponseData;
   adjustType: TAdjustType;
   quantity: number;
 }
@@ -26,11 +29,12 @@ export interface IAdjustStock {
 export interface ISale {
   _id: string;
   productId: string;
+  product: IProductResponseData;
   quantity: number;
   totalPrice: number;
 }
 
 export interface IAddModalProps {
   isOpen: boolean;
-  close: () => void;
+  onClose: () => void;
 }

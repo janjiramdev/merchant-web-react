@@ -16,11 +16,11 @@ import {
   deleteProduct,
   searchProducts,
   updateProduct,
-} from '../services/productsService';
+} from '../services/products.service';
 import type {
-  ICreateProductData,
-  ISearchProductResponse,
-  IUpdateProductData,
+  ICreateProductRequestBody,
+  IProductResponseData,
+  IUpdateProductRequestBody,
 } from '../interfaces/services.interface';
 
 const columns = [
@@ -33,15 +33,15 @@ const columns = [
   { key: 'actions', label: 'ACTIONS' },
 ] as const;
 
-export default function Product({ isOpen, close }: IAddModalProps) {
+export default function Product({ isOpen, onClose }: IAddModalProps) {
   const [products, setProducts] = useState<IProduct[]>([]);
-  const [newProduct, setNewProduct] = useState<ICreateProductData>({
+  const [newProduct, setNewProduct] = useState<ICreateProductRequestBody>({
     name: '',
     description: '',
     price: 0,
   });
   const [editIndex, setEditIndex] = useState<number | undefined>(undefined);
-  const [editProduct, setEditProduct] = useState<IUpdateProductData>({
+  const [editProduct, setEditProduct] = useState<IUpdateProductRequestBody>({
     name: '',
     description: '',
     price: 0,
@@ -78,7 +78,7 @@ export default function Product({ isOpen, close }: IAddModalProps) {
 
       setProducts([...products, createdProduct]);
       setNewProduct({ name: '', description: '', price: 0 });
-      close();
+      onClose();
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : 'Create Product Failed',
@@ -165,8 +165,8 @@ export default function Product({ isOpen, close }: IAddModalProps) {
   useEffect(() => {
     const fetch = async () => {
       try {
-        const data: ISearchProductResponse[] = await searchProducts();
-        setProducts(data);
+        const response: IProductResponseData[] = await searchProducts();
+        setProducts(response);
       } catch (error) {
         setErrorMessage(
           error instanceof Error ? error.message : 'Search Product Failed',
@@ -179,7 +179,7 @@ export default function Product({ isOpen, close }: IAddModalProps) {
   return (
     <div>
       {isOpen && (
-        <Modal title="Add New Product" onClose={close}>
+        <Modal title="Add New Product" onClose={onClose}>
           <div className="grid gap-2 mb-4">
             {errorMessage && (
               <FailedAlert
@@ -217,7 +217,7 @@ export default function Product({ isOpen, close }: IAddModalProps) {
           </div>
 
           <div className="flex justify-end gap-2">
-            <CancelButton onClick={close}>Cancel</CancelButton>
+            <CancelButton onClick={onClose}>Cancel</CancelButton>
             <ConfirmButton onClick={handleAddClick}>Add</ConfirmButton>
           </div>
         </Modal>

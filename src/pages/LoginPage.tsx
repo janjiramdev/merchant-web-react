@@ -4,14 +4,15 @@ import ConfirmButton from '../components/buttons/ConfirmButton';
 import PasswordToggleButton from '../components/buttons/PasswordToggleButton';
 import TextField from '../components/inputs/TextField';
 import { useSession } from '../contexts/sessions/SessionContext';
-import type { ILoginServiceData } from '../interfaces/services.interface';
-import { login } from '../services/authService';
+import type { ILoginServiceRequestBody } from '../interfaces/services.interface';
+import { login } from '../services/auth.service';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  
   const { setTokens } = useSession();
 
-  const [formData, setFormData] = useState<ILoginServiceData>({
+  const [formData, setFormData] = useState<ILoginServiceRequestBody>({
     username: '',
     password: '',
   });
@@ -25,11 +26,11 @@ export default function LoginPage() {
     setErrorMessage(undefined);
 
     try {
-      const res = await login({
+      const response = await login({
         username: formData.username.trim(),
         password: formData.password.trim(),
       });
-      setTokens(res);
+      setTokens(response);
       navigate('/home');
     } catch (error: unknown) {
       setErrorMessage(error instanceof Error ? error.message : 'Login Failed');
