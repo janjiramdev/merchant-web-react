@@ -42,7 +42,10 @@ export default function GetProfile({ username }: GetProfileFeatureProps) {
       </button>
 
       {isOpenProfileModal && profile && (
-        <Modal title="User Profile" onClose={() => setIsOpenProfileModal(false)}>
+        <Modal
+          title="User Profile"
+          onClose={() => setIsOpenProfileModal(false)}
+        >
           <div className="grid grid-cols-2 gap-y-3 gap-x-4">
             <div className="text-right font-medium text-gray-600">
               Username:

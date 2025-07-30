@@ -7,4 +7,4 @@ declare module 'js-cookie' {
 
 type TUserGender = 'male' | 'female' | 'other';
 
-type TAdjustType = 'add' | 'remove'
+type TAdjustType = 'add' | 'remove';

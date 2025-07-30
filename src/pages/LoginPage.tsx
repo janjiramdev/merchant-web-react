@@ -9,7 +9,7 @@ import { login } from '../services/auth.service';
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  
+
   const { setTokens } = useSession();
 
   const [formData, setFormData] = useState<ILoginServiceRequestBody>({
